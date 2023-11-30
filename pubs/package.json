@@ -1,5 +1,5 @@
 {
-  "name": "advent-of-code-2022-pubs",
+  "name": "advent-of-code-2023-pubs",
   "version": "1.0.0",
   "description": "Write ups of my advent of code 2023 solutions using 11ty static site builder",
   "main": "index.js",

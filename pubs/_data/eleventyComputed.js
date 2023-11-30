@@ -8,15 +8,16 @@ function injectWriteUpUrl(day, posts) {
 async function buildDay(file, day, posts) {
     const contents = await fs.readFile(file, 'utf-8')
     const line = contents.split(/[\n\r]+/)[0]
-    // This is my solution for [Advent of Code - Day 1 - _Calorie Counting_](https://adventofcode.com/2022/day/1)
+    // This is my solution for [Advent of Code - Day 1 - _Calorie
+    // Counting_](https://adventofcode.com/2023/day/1)
     const [,title, puzzleURL] =
     line.match(/\[Advent of Code - Day \d+ - _([^_]+)_]\(([^)]+)\)/) ?? []
 
     const links = {
         Puzzle: puzzleURL,
         ...(injectWriteUpUrl(day, posts)),
-        Documentation: `/advent_of_code_2022/day_${day}/index.html`,
-        Source: `https://github.com/kamioftea/advent-of-code-2022/blob/main/src/day_${day}.rs`
+        Documentation: `/advent_of_code_2023/day_${day}/index.html`,
+        Source: `https://github.com/kamioftea/advent-of-code-2023/blob/main/src/day_${day}.rs`
     }
 
     return {day, title, links};
@@ -44,13 +45,19 @@ module.exports = function() {
             );
             return [...(await buildSolutionData(posts))].sort((a, b) => a.day - b.day)
         },
-        title: data => data.title || [data.header, 'Advent of Code 2022', 'Jeff Horton'].join(' | '),
+        title: data => data.title ||
+            [
+                data.header,
+                ...(data.day ? [`Day ${data.day}`] : []) ,
+                'Advent of Code 2023',
+                'Jeff Horton'
+            ].join(' | '),
         description: data => {
             if(data.description) {
                return data.description
             }
             if(data.day && data.header) {
-                return `A walkthrough of my solution for Advent of Code 2022 ${data.header}`
+                return `A walkthrough of my solution for Advent of Code 2023 - Day ${data.day} - ${data.header}`
             }
         }
     }

@@ -31,7 +31,7 @@ jobs:
 
     - name: Build Blog
       env:
-        PATH_PREFIX: /advent-of-code-2022
+        PATH_PREFIX: /advent-of-code-2023
       run: |
         cd pubs
         npm ci

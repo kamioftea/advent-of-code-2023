@@ -30,7 +30,7 @@ This:
 - Builds the docs
 - Builds the static site
 - Bundles them into an artefact suitable for GitHub pages
-- Deploys the bundle to the repositories [GitHub Pages site](https://kamioftea.github.io/advent-of-code-2022).
+- Deploys the bundle to the repositories [GitHub Pages site](https://kamioftea.github.io/advent-of-code-2023).
 
 ## Previous years:
 
