@@ -1,0 +1,32 @@
+{
+  "name": "advent-of-code-2022-pubs",
+  "version": "1.0.0",
+  "description": "Write ups of my advent of code 2023 solutions using 11ty static site builder",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"npm:watch:*\"",
+    "watch:11ty": "eleventy --serve --port=8081",
+    "watch:scss": "sass -Inode_modules/foundation-sites/scss _includes/stylesheets:_site/assets/styles --watch",
+    "build": "rm -rf _site && mkdir _site && cp -r ../target/doc/* ./_site && sass -Inode_modules/foundation-sites/scss _includes/stylesheets:_site/assets/styles && eleventy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kamioftea/advent-of-code-2023/pubs"
+  },
+  "author": "Jeff Horton <jeff@goblinoid.co.uk>",
+  "license": "ISC",
+  "dependencies": {
+    "@11ty/eleventy": "^2.0.1",
+    "concurrently": "^8.2.2",
+    "feather-icons": "^4.29.1",
+    "foundation-sites": "^6.8.1",
+    "highlight.js": "^11.9.0",
+    "markdown-it": "^13.0.2",
+    "markdown-it-anchor": "^8.6.7",
+    "markdown-it-deflist": "^2.1.0",
+    "sass": "^1.69.5"
+  },
+  "devDependencies": {
+    "@11ty/eleventy-plugin-inclusive-language": "^1.0.3"
+  }
+}
