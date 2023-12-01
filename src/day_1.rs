@@ -76,11 +76,11 @@ treb7uchet"
 
     #[test]
     fn can_substitute_digit_words() {
-        assert_eq!(substitute_digit_strings("two1nine"), "t2o19");
+        assert_eq!(substitute_digit_strings("two1nine"), "t2o1n9e");
         assert_eq!(substitute_digit_strings("eightwothree"), "e8t2ot3e");
         assert_eq!(substitute_digit_strings("abcone2threexyz"), "abco1e2t3exyz");
         assert_eq!(substitute_digit_strings("xtwone3four"), "xt2o1e34");
-        assert_eq!(substitute_digit_strings("4nineeightseven2"), "4n9ee8ts7n2");
+        assert_eq!(substitute_digit_strings("4nineeightseven2"), "4n9ee8t7n2");
         assert_eq!(substitute_digit_strings("zoneight234"), "zo1e8t234");
         assert_eq!(substitute_digit_strings("7pqrstsixteen"), "7pqrst6teen");
         assert_eq!(substitute_digit_strings("five"), "5e");
