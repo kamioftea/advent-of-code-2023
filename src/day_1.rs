@@ -1,8 +1,14 @@
-//! This is my solution for [Advent of Code - Day 1 - _???_](https://adventofcode.com/2023/day/1)
+//! This is my solution for [Advent of Code - Day 1: _Trebuchet?_](https://adventofcode.com/2023/day/1)
 //!
 //!
 
+use regex::Regex;
 use std::fs;
+
+struct ValueExtractor {
+    pattern: Regex,
+    digit_mapper: fn(&str) -> u32,
+}
 
 /// The entry point for running the solutions with the 'real' puzzle input.
 ///
@@ -13,41 +19,68 @@ pub fn run() {
 
     println!(
         "The sum of calibration values is {}",
-        sum_calibration_values(&contents)
+        sum_calibration_values(&contents, &part_1_extractor())
     );
     println!(
         "The sum of calibration values with digit strings is {}",
-        sum_calibration_values_with_substitution(&contents)
+        sum_calibration_values(&contents, &part_2_extractor())
     );
 }
 
-fn sum_calibration_values(input: &String) -> u32 {
-    input.lines().map(parse_line).sum()
+fn part_1_extractor() -> ValueExtractor {
+    ValueExtractor {
+        pattern: Regex::new(r"\d").unwrap(),
+        digit_mapper: |d| d.parse().unwrap(),
+    }
 }
 
-fn sum_calibration_values_with_substitution(input: &String) -> u32 {
-    input
-        .lines()
-        .map(|line| parse_line(substitute_digit_strings(line).as_str()))
-        .sum()
+fn part_2_extractor() -> ValueExtractor {
+    ValueExtractor {
+        pattern: Regex::new(r"(\d|one|two|three|four|five|six|seven|eight|nine)").unwrap(),
+        digit_mapper: |d| match d {
+            "one" => 1,
+            "two" => 2,
+            "three" => 3,
+            "four" => 4,
+            "five" => 5,
+            "six" => 6,
+            "seven" => 7,
+            "eight" => 8,
+            "nine" => 9,
+            _ => d.parse().unwrap(),
+        },
+    }
 }
 
-fn parse_line(line: &str) -> u32 {
-    let digits: Vec<u32> = line.chars().filter_map(|c| c.to_digit(10)).collect();
-
-    digits.first().unwrap_or(&0) * 10 + digits.last().unwrap_or(&0)
+fn sum_calibration_values(input: &String, extractor: &ValueExtractor) -> u32 {
+    input.lines().map(|line| parse_line(line, &extractor)).sum()
 }
 
-fn substitute_digit_strings(line: &str) -> String {
-    line.replace("one", "o1e")
-        .replace("two", "t2o")
-        .replace("three", "t3e")
-        .replace("four", "4")
-        .replace("five", "5e")
-        .replace("six", "6")
-        .replace("seven", "7n")
-        .replace("eight", "e8t")
-        .replace("nine", "n9e")
+fn parse_line(line: &str, extractor: &ValueExtractor) -> u32 {
+    fn iter(
+        line: &str,
+        extractor: &ValueExtractor,
+        pos: usize,
+        tens: Option<u32>,
+        units: Option<u32>,
+    ) -> u32 {
+        match extractor.pattern.find_at(line, pos) {
+            Some(m) => {
+                let value = (extractor.digit_mapper)(m.as_str());
+
+                iter(
+                    line,
+                    extractor,
+                    m.start() + 1,
+                    tens.or(Some(value)),
+                    Some(value),
+                )
+            }
+            None => tens.unwrap_or(0) * 10 + units.unwrap_or(0),
+        }
+    }
+
+    iter(line, extractor, 0, None, None)
 }
 
 #[cfg(test)]
@@ -56,39 +89,42 @@ mod tests {
 
     #[test]
     fn can_parse_lines() {
-        assert_eq!(parse_line("1abc2"), 12);
-        assert_eq!(parse_line("pqr3stu8vwx"), 38);
-        assert_eq!(parse_line("a1b2c3d4e5f"), 15);
-        assert_eq!(parse_line("treb7uchet"), 77);
+        let part_1_extractor = part_1_extractor();
+
+        assert_eq!(parse_line("1abc2", &part_1_extractor), 12);
+        assert_eq!(parse_line("pqr3stu8vwx", &part_1_extractor), 38);
+        assert_eq!(parse_line("a1b2c3d4e5f", &part_1_extractor), 15);
+        assert_eq!(parse_line("treb7uchet", &part_1_extractor), 77);
+
+        let part_2_extractor = part_2_extractor();
+
+        assert_eq!(parse_line("two1nine", &part_2_extractor), 29);
+        assert_eq!(parse_line("eightwothree", &part_2_extractor), 83);
+        assert_eq!(parse_line("abcone2threexyz", &part_2_extractor), 13);
+        assert_eq!(parse_line("xtwone3four", &part_2_extractor), 24);
+        assert_eq!(parse_line("4nineeightseven2", &part_2_extractor), 42);
+        assert_eq!(parse_line("zoneight234", &part_2_extractor), 14);
+        assert_eq!(parse_line("7pqrstsixteen", &part_2_extractor), 76);
+
+        assert_eq!(parse_line("five", &part_2_extractor), 55);
+        assert_eq!(parse_line("eighthree", &part_2_extractor), 83);
     }
 
     #[test]
     fn can_sum_calibration_values() {
-        let input = "\
+        let part_1_input = "\
 1abc2
 pqr3stu8vwx
 a1b2c3d4e5f
 treb7uchet"
             .to_string();
 
-        assert_eq!(sum_calibration_values(&input), 142)
-    }
+        assert_eq!(
+            sum_calibration_values(&part_1_input, &part_1_extractor()),
+            142
+        );
 
-    #[test]
-    fn can_substitute_digit_words() {
-        assert_eq!(substitute_digit_strings("two1nine"), "t2o1n9e");
-        assert_eq!(substitute_digit_strings("eightwothree"), "e8t2ot3e");
-        assert_eq!(substitute_digit_strings("abcone2threexyz"), "abco1e2t3exyz");
-        assert_eq!(substitute_digit_strings("xtwone3four"), "xt2o1e34");
-        assert_eq!(substitute_digit_strings("4nineeightseven2"), "4n9ee8t7n2");
-        assert_eq!(substitute_digit_strings("zoneight234"), "zo1e8t234");
-        assert_eq!(substitute_digit_strings("7pqrstsixteen"), "7pqrst6teen");
-        assert_eq!(substitute_digit_strings("five"), "5e");
-    }
-
-    #[test]
-    fn can_sum_calibration_values_with_string_digits() {
-        let input = "\
+        let part_2_input = "\
 two1nine
 eightwothree
 abcone2threexyz
@@ -98,6 +134,9 @@ zoneight234
 7pqrstsixteen"
             .to_string();
 
-        assert_eq!(sum_calibration_values_with_substitution(&input), 281)
+        assert_eq!(
+            sum_calibration_values(&part_2_input, &part_2_extractor()),
+            281
+        );
     }
 }
