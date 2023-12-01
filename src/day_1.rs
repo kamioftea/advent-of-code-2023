@@ -2,6 +2,7 @@
 //!
 //!
 
+use itertools::unfold;
 use regex::Regex;
 use std::fs;
 
@@ -56,31 +57,29 @@ fn sum_calibration_values(input: &String, extractor: &ValueExtractor) -> u32 {
     input.lines().map(|line| parse_line(line, &extractor)).sum()
 }
 
+fn overlapping_matches<'a>(line: &'a str, pattern: &Regex) -> Vec<&'a str> {
+    unfold(0usize, |pos| {
+        let digit = pattern.find_at(line, *pos);
+        *pos = digit.map(|m| m.start()).unwrap_or(0) + 1;
+        digit.map(|m| m.as_str())
+    })
+    .collect()
+}
+
 fn parse_line(line: &str, extractor: &ValueExtractor) -> u32 {
-    fn iter(
-        line: &str,
-        extractor: &ValueExtractor,
-        pos: usize,
-        tens: Option<u32>,
-        units: Option<u32>,
-    ) -> u32 {
-        match extractor.pattern.find_at(line, pos) {
-            Some(m) => {
-                let value = (extractor.digit_mapper)(m.as_str());
+    let matches: Vec<&str> = overlapping_matches(line, &extractor.pattern);
 
-                iter(
-                    line,
-                    extractor,
-                    m.start() + 1,
-                    tens.or(Some(value)),
-                    Some(value),
-                )
-            }
-            None => tens.unwrap_or(0) * 10 + units.unwrap_or(0),
-        }
-    }
+    let tens = matches
+        .first()
+        .map(|&s| (extractor.digit_mapper)(s))
+        .unwrap_or(0);
 
-    iter(line, extractor, 0, None, None)
+    let units = matches
+        .last()
+        .map(|&s| (extractor.digit_mapper)(s))
+        .unwrap_or(0);
+
+    tens * 10 + units
 }
 
 #[cfg(test)]
