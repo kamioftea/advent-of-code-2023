@@ -1,4 +1,4 @@
-//! This is my solution for [Advent of Code - Day 1 - _Calorie Counting_](https://adventofcode.com/2023/day/1)
+//! This is my solution for [Advent of Code - Day 1 - _???_](https://adventofcode.com/2023/day/1)
 //!
 //!
 

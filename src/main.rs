@@ -1,5 +1,7 @@
+mod bootstrap_day;
 mod day_1;
 
+use bootstrap_day::bootstrap_day;
 use std::io::{self, Write};
 use std::time::Instant;
 
@@ -13,10 +15,10 @@ fn main() {
     print!("Which day? (0 to run all): ");
     io::stdout().flush().unwrap();
 
-    let day: i32 = read!();
+    let day: u8 = read!();
     let days: Vec<Box<dyn Fn() -> ()>> = vec![
-        Box::new(|| day_1::run()),
-    ];
+    //        Box::new(|| day_1::run()),
+        ];
 
     let start = Instant::now();
     match days.get((day - 1) as usize) {
@@ -27,6 +29,7 @@ fn main() {
             solution();
             println!("-- took {:.2?}", start.elapsed());
         }),
+        None if day >= 1 && day <= 25 => bootstrap_day(day).expect("Failed to bootstrap day"),
         None => println!("Invalid Day {}", day),
     }
 

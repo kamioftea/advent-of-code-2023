@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 itertools = "0.12.0"
 text_io = "0.1.9"
+error-chain = { version = "0.12.4", features = [] }
+reqwest = { version = "0.11.22", features = ["blocking", "cookies"] }
+cookie = "0.18.0"
+url = "2.5.0"
