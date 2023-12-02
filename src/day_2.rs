@@ -102,6 +102,17 @@ fn parse_cube(cube_str: &str) -> (&str, u8) {
     );
 }
 
+fn minimal_contents(game: &Game) -> Draw {
+    let mut min_contents = Draw::new(0, 0, 0);
+    for draw in &game.draws {
+        min_contents.red = min_contents.red.max(draw.red);
+        min_contents.green = min_contents.green.max(draw.green);
+        min_contents.blue = min_contents.blue.max(draw.blue);
+    }
+
+    min_contents
+}
+
 #[cfg(test)]
 mod tests {
     use crate::day_2::*;
@@ -168,5 +179,13 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
     }
 
     #[test]
-    fn can_find_minimal_contents() {}
+    fn can_find_minimal_contents() {
+        let games = example_games();
+
+        assert_eq!(minimal_contents(&games[0]), Draw::new(4, 2, 6));
+        assert_eq!(minimal_contents(&games[1]), Draw::new(1, 3, 4));
+        assert_eq!(minimal_contents(&games[2]), Draw::new(20, 13, 6));
+        assert_eq!(minimal_contents(&games[3]), Draw::new(14, 3, 15));
+        assert_eq!(minimal_contents(&games[4]), Draw::new(6, 3, 2));
+    }
 }
