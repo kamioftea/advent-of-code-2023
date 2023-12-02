@@ -48,7 +48,6 @@ module.exports = function() {
         title: data => data.title ||
             [
                 data.header,
-                ...(data.day ? [`Day ${data.day}`] : []) ,
                 'Advent of Code 2023',
                 'Jeff Horton'
             ].join(' | '),
@@ -57,7 +56,7 @@ module.exports = function() {
                return data.description
             }
             if(data.day && data.header) {
-                return `A walkthrough of my solution for Advent of Code 2023 - Day ${data.day} - ${data.header}`
+                return `A walkthrough of my solution for Advent of Code 2023 - ${data.header}`
             }
         }
     }
