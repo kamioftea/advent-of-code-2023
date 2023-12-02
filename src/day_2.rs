@@ -37,31 +37,31 @@ impl Game {
 /// - It is expected this will be called by [`super::main()`] when the user elects to run day 2.
 pub fn run() {
     let contents = fs::read_to_string("res/day-2-input.txt").expect("Failed to read file");
+    let games = parse_input(&contents);
 
-    println!(
-        "The sum of valid game ids is {}",
-        sum_valid_games(&contents)
-    );
+    println!("The sum of valid game ids is {}", sum_valid_games(&games));
 
     println!(
         "The sum of minimal content powers is {}",
-        sum_minimal_contents_powers(&contents)
+        sum_minimal_contents_powers(&games)
     );
 }
 
-fn sum_valid_games(input: &String) -> u32 {
-    input
-        .lines()
-        .map(parse_game)
-        .filter(is_valid_game)
+fn parse_input(input: &String) -> Vec<Game> {
+    input.lines().map(parse_game).collect()
+}
+
+fn sum_valid_games(games: &Vec<Game>) -> u32 {
+    games
+        .into_iter()
+        .filter(|&g| is_valid_game(g))
         .map(|g| g.id)
         .sum()
 }
 
-fn sum_minimal_contents_powers(input: &String) -> u32 {
-    input
-        .lines()
-        .map(parse_game)
+fn sum_minimal_contents_powers(games: &Vec<Game>) -> u32 {
+    games
+        .into_iter()
         .map(|game| draw_power(&minimal_contents(&game)))
         .sum()
 }
@@ -183,7 +183,7 @@ mod tests {
     }
 
     #[test]
-    fn can_sum_valid_games() {
+    fn can_parse_input() {
         let input = "\
 Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
 Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
@@ -192,7 +192,12 @@ Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
 Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
             .to_string();
 
-        assert_eq!(sum_valid_games(&input), 8);
+        assert_eq!(parse_input(&input), example_games());
+    }
+
+    #[test]
+    fn can_sum_valid_games() {
+        assert_eq!(sum_valid_games(&example_games()), 8);
     }
 
     #[test]
@@ -219,14 +224,6 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
 
     #[test]
     fn can_sum_minimal_contents_power() {
-        let input = "\
-Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
-Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
-Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
-Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
-Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
-            .to_string();
-
-        assert_eq!(sum_minimal_contents_powers(&input), 2286);
+        assert_eq!(sum_minimal_contents_powers(&example_games()), 2286);
     }
 }
