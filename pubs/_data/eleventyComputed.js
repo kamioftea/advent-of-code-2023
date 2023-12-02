@@ -8,10 +8,10 @@ function injectWriteUpUrl(day, posts) {
 async function buildDay(file, day, posts) {
     const contents = await fs.readFile(file, 'utf-8')
     const line = contents.split(/[\n\r]+/)[0]
-    // This is my solution for [Advent of Code - Day 1 - _Calorie
+    // This is my solution for [Advent of Code - Day 1: _Calorie
     // Counting_](https://adventofcode.com/2023/day/1)
     const [,title, puzzleURL] =
-    line.match(/\[Advent of Code - Day \d+ - _([^_]+)_]\(([^)]+)\)/) ?? []
+    line.match(/\[Advent of Code - Day \d+: _([^_]+)_]\(([^)]+)\)/) ?? []
 
     const links = {
         Puzzle: puzzleURL,
