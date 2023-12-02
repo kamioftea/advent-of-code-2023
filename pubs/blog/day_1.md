@@ -251,17 +251,20 @@ I also want to address an issue from the first regex attempt where the regex and
 together, which is more of an issue now that I'll need separate pairs for part one and part two. I start off
 reaching for a recursive function as I need to track quite a few moving parts. I need to get back into the rust
 mindset because this would have been much clearer with a loop and mutable variables, and the borrow checker has my
-back for the memory safety / impurity that recursion can be used to avoid. I'll go through the steps in code:
+back for the memory safety / impurity that recursion can be used to avoid.
+
+Tie the regex and parser together:
 
 ```rust
-// Tie the regex and parser together
 struct ValueExtractor {
     pattern: Regex,
     digit_mapper: fn(&str) -> u32,
 }
+```
 
-// Make the tests match the API I now want hiding implementation details. 
-// `can_substitute_digit_words` is removed
+Make the tests match the API I now want hiding implementation details, `can_substitute_digit_words` is removed:
+
+```rust
 #[test]
 fn can_parse_lines() {
     let part_1_extractor = part_1_extractor();
@@ -314,10 +317,12 @@ zoneight234
         281
     );
 }
+```
 
-// Parse line has the biggest change. It now needs to get the first and 
-// last possibly overlapping regex matches and combine those into the
-// final value.
+Parse line has the biggest change. It now needs to get the first and last possibly overlapping regex matches and combine
+those into the final value:
+
+```rust
 fn parse_line(line: &str, extractor: &ValueExtractor) -> u32 {
     // My habit of an inner recursive function called iter is a
     // hangover from when I learnt Scala...
@@ -355,13 +360,15 @@ fn parse_line(line: &str, extractor: &ValueExtractor) -> u32 {
     // Kick off the recursive function
     iter(line, extractor, 0, None, None)
 }
-
-// The separate part functions can now be combined
+```
+The separate part functions can now be combined
+```rust
 fn sum_calibration_values(input: &String, extractor: &ValueExtractor) -> u32 {
     input.lines().map(|line| parse_line(line, &extractor)).sum()
 }
-
-// And the change between the two parts is now nicely contained
+```
+And the differences between the two parts are now nicely contained in an extractor for each:
+```rust
 fn part_1_extractor() -> ValueExtractor {
     ValueExtractor {
         pattern: Regex::new(r"\d").unwrap(),
@@ -392,11 +399,11 @@ fn part_2_extractor() -> ValueExtractor {
 ```
 
 This is going in the right direction I think, but there are still improvements to make. The recursive function is hard
-to follow. It is also parsing values that are later throw away. I'd like to pull out the stepping through the regex 
-matches, and tracking the position to start the next seek from, and the parsing. Ideally I'd like to go back to the 
-style before where the regex produces a Vec of strings it matched, and the first and last are pulled out and parsed. 
-The itertools library has an `unfold` generator to help do exactly that. I feel the function could do with some 
-comments to help explain it, but the complexity caused by needing to support overlapping regex matches is now 
+to follow. It is also parsing values that are later throw away. I'd like to pull out the stepping through the regex
+matches, and tracking the position to start the next seek from, and the parsing. Ideally I'd like to go back to the
+style before where the regex produces a Vec of strings it matched, and the first and last are pulled out and parsed.
+The itertools library has an `unfold` generator to help do exactly that. I feel the function could do with some
+comments to help explain it, but the complexity caused by needing to support overlapping regex matches is now
 encapsulated and `parse_line` is much clearer, and quite close to what it looked like for the naive regex solution.
 
 ```rust
@@ -439,8 +446,8 @@ fn parse_line(line: &str, extractor: &ValueExtractor) -> u32 {
 
 ## Final thoughts
 
-It's never great when the examples don't cover an awkward to debug gotcha. I'm very glad of the hint to get unstuck, 
-even if it was a spoiler. It's still great to get back into the swing of advent of code, and it turned out to be an 
-interesting challenge to refactor the code. I also needed to use a lifetime to tie the life of the returned matches to 
-the line they reference. Being able to do that on day one is a step-up in my recollection of Rust compared to previous 
+It's never great when the examples don't cover an awkward to debug gotcha. I'm very glad of the hint to get unstuck,
+even if it was a spoiler. It's still great to get back into the swing of advent of code, and it turned out to be an
+interesting challenge to refactor the code. I also needed to use a lifetime to tie the life of the returned matches to
+the line they reference. Being able to do that on day one is a step-up in my recollection of Rust compared to previous
 years, which is encouraging.

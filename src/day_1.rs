@@ -1,16 +1,21 @@
 //! This is my solution for [Advent of Code - Day 1: _Trebuchet?_](https://adventofcode.com/2023/day/1)
 //!
+//! [`parse_line`] does most of the heavy lifting, using the provided regex to find digits in a line, and then turn
+//! those into a calibration value. It defers to [`overlapping_matches`] to handle getting regex matches that might
+//! overlap. [`sum_calibration_values`] reduces the values into the final puzzle answer.
 //!
+//! [`ValueExtractor`]s are used to codify the different logic for the two parts, see [`part_1_extractor`] and
+//! [`part_2_extractor`].
 
 use itertools::unfold;
 use regex::Regex;
 use std::fs;
 
+/// Describes how to find digits in a string, and how to turn those into their numeric representation
 struct ValueExtractor {
     pattern: Regex,
     digit_mapper: fn(&str) -> u32,
 }
-
 /// The entry point for running the solutions with the 'real' puzzle input.
 ///
 /// - The puzzle input is expected to be at `<project_root>/res/day-1-input`
@@ -53,6 +58,7 @@ fn part_2_extractor() -> ValueExtractor {
     }
 }
 
+/// Reduce the value extracted in each line to the sum required as the puzzle answer.
 fn sum_calibration_values(input: &String, extractor: &ValueExtractor) -> u32 {
     input.lines().map(|line| parse_line(line, &extractor)).sum()
 }
@@ -77,6 +83,8 @@ fn overlapping_matches<'a>(line: &'a str, pattern: &Regex) -> Vec<&'a str> {
     .collect()
 }
 
+/// Use the logic in the provided extractor to find all matches, then take the first and last and combine them into a
+/// two digit number.
 fn parse_line(line: &str, extractor: &ValueExtractor) -> u32 {
     let matches: Vec<&str> = overlapping_matches(line, &extractor.pattern);
 
