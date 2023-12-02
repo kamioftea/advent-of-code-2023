@@ -57,10 +57,21 @@ fn sum_calibration_values(input: &String, extractor: &ValueExtractor) -> u32 {
     input.lines().map(|line| parse_line(line, &extractor)).sum()
 }
 
+/// Return regex matches that might overlap
+///
+/// ```rust
+/// let pattern = Regex::new(r"(eight|three)").unwrap();
+/// let res: Vec<&str> = overlapping_matches("eighthree", &pattern);
+/// assert_eq!(res, vec!("eight", "three"));
+/// ```
 fn overlapping_matches<'a>(line: &'a str, pattern: &Regex) -> Vec<&'a str> {
     unfold(0usize, |pos| {
+        // Find the next match
         let digit = pattern.find_at(line, *pos);
+        // The next iteration should start from the next character after
+        // the match to allow for overlaps
         *pos = digit.map(|m| m.start()).unwrap_or(0) + 1;
+        // For convenience return just the match contents
         digit.map(|m| m.as_str())
     })
     .collect()
