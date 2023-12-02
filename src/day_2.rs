@@ -106,61 +106,51 @@ fn parse_cube(cube_str: &str) -> (&str, u8) {
 mod tests {
     use crate::day_2::*;
 
-    #[test]
-    fn can_parse_game() {
-        assert_eq!(
-            parse_game("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"),
+    fn example_games() -> Vec<Game> {
+        vec![
             Game::new(
                 1,
-                vec! {
-                    Draw::new(4, 0, 3),
-                    Draw::new(1, 2, 6),
-                    Draw::new(0, 2, 0),
-                },
-            )
+                vec![Draw::new(4, 0, 3), Draw::new(1, 2, 6), Draw::new(0, 2, 0)],
+            ),
+            Game::new(
+                2,
+                vec![Draw::new(0, 2, 1), Draw::new(1, 3, 4), Draw::new(0, 1, 1)],
+            ),
+            Game::new(
+                3,
+                vec![Draw::new(20, 8, 6), Draw::new(4, 13, 5), Draw::new(1, 5, 0)],
+            ),
+            Game::new(
+                4,
+                vec![Draw::new(3, 1, 6), Draw::new(6, 3, 0), Draw::new(14, 3, 15)],
+            ),
+            Game::new(5, vec![Draw::new(6, 3, 1), Draw::new(1, 2, 2)]),
+        ]
+    }
+
+    #[test]
+    fn can_parse_game() {
+        let games = example_games();
+
+        assert_eq!(
+            parse_game("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"),
+            games[0]
         );
         assert_eq!(
             parse_game("Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue"),
-            Game::new(
-                2,
-                vec! {
-                    Draw::new(0, 2, 1),
-                    Draw::new(1, 3, 4),
-                    Draw::new(0, 1, 1),
-                },
-            )
+            games[1]
         );
         assert_eq!(
             parse_game("Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red"),
-            Game::new(
-                3,
-                vec! {
-                    Draw::new(20, 8, 6),
-                    Draw::new(4, 13, 5),
-                    Draw::new(1, 5, 0),
-                },
-            )
+            games[2]
         );
         assert_eq!(
             parse_game("Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red"),
-            Game::new(
-                4,
-                vec! {
-                    Draw::new(3, 1, 6),
-                    Draw::new(6, 3, 0),
-                    Draw::new(14, 3, 15),
-                },
-            )
+            games[3]
         );
         assert_eq!(
             parse_game("Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"),
-            Game::new(
-                5,
-                vec! {
-                    Draw::new(6, 3, 1),
-                    Draw::new(1, 2, 2),
-                }
-            )
+            games[4]
         );
     }
 
