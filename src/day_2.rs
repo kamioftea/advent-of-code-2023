@@ -42,6 +42,11 @@ pub fn run() {
         "The sum of valid game ids is {}",
         sum_valid_games(&contents)
     );
+
+    println!(
+        "The sum of minimal content powers is {}",
+        sum_minimal_contents_powers(&contents)
+    );
 }
 
 fn sum_valid_games(input: &String) -> u32 {
@@ -50,6 +55,14 @@ fn sum_valid_games(input: &String) -> u32 {
         .map(parse_game)
         .filter(is_valid_game)
         .map(|g| g.id)
+        .sum()
+}
+
+fn sum_minimal_contents_powers(input: &String) -> u32 {
+    input
+        .lines()
+        .map(parse_game)
+        .map(|game| draw_power(&minimal_contents(&game)))
         .sum()
 }
 
@@ -202,5 +215,18 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
         assert_eq!(draw_power(&minimal_contents(&games[2])), 1560);
         assert_eq!(draw_power(&minimal_contents(&games[3])), 630);
         assert_eq!(draw_power(&minimal_contents(&games[4])), 36);
+    }
+
+    #[test]
+    fn can_sum_minimal_contents_power() {
+        let input = "\
+Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
+            .to_string();
+
+        assert_eq!(sum_minimal_contents_powers(&input), 2286);
     }
 }
