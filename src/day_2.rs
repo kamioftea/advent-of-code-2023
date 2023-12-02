@@ -113,6 +113,10 @@ fn minimal_contents(game: &Game) -> Draw {
     min_contents
 }
 
+fn draw_power(draw: &Draw) -> u32 {
+    (draw.red as u32) * (draw.green as u32) * (draw.blue as u32)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::day_2::*;
@@ -187,5 +191,16 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
         assert_eq!(minimal_contents(&games[2]), Draw::new(20, 13, 6));
         assert_eq!(minimal_contents(&games[3]), Draw::new(14, 3, 15));
         assert_eq!(minimal_contents(&games[4]), Draw::new(6, 3, 2));
+    }
+
+    #[test]
+    fn can_find_minimal_contents_power() {
+        let games = example_games();
+
+        assert_eq!(draw_power(&minimal_contents(&games[0])), 48);
+        assert_eq!(draw_power(&minimal_contents(&games[1])), 12);
+        assert_eq!(draw_power(&minimal_contents(&games[2])), 1560);
+        assert_eq!(draw_power(&minimal_contents(&games[3])), 630);
+        assert_eq!(draw_power(&minimal_contents(&games[4])), 36);
     }
 }
