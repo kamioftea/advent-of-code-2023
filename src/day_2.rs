@@ -1,6 +1,17 @@
 //! This is my solution for [Advent of Code - Day 2: _Cube Conundrum_](https://adventofcode.com/2023/day/2)
 //!
+//! [`Game`]s and [`Draw`]s have structs to contain them. Most of the work is in parsing, which is quite heavily
+//! subdivided:
+//! * [`parse_input`]
+//!     * [`parse_game`]
+//!         * [`parse_id`]
+//!         * [`parse_draw`]
+//!             * [`parse_cube`]
 //!
+//! Once the input is in the internal representation it is mostly composing everything together:
+//! * Part 1: [`sum_valid_game_ids`] uses [`is_valid_game`] for each line
+//! * Part 2: [`sum_minimal_contents_powers`] splits the logic for each line between [`minimal_contents`] and
+//!   [`draw_power`]
 
 use std::fs;
 
@@ -39,7 +50,10 @@ pub fn run() {
     let contents = fs::read_to_string("res/day-2-input.txt").expect("Failed to read file");
     let games = parse_input(&contents);
 
-    println!("The sum of valid game ids is {}", sum_valid_games(&games));
+    println!(
+        "The sum of valid game ids is {}",
+        sum_valid_game_ids(&games)
+    );
 
     println!(
         "The sum of minimal content powers is {}",
@@ -47,31 +61,12 @@ pub fn run() {
     );
 }
 
+/// Parse the puzzle input treating each line as a game specification
 fn parse_input(input: &String) -> Vec<Game> {
     input.lines().map(parse_game).collect()
 }
 
-fn sum_valid_games(games: &Vec<Game>) -> u32 {
-    games
-        .into_iter()
-        .filter(|&g| is_valid_game(g))
-        .map(|g| g.id)
-        .sum()
-}
-
-fn sum_minimal_contents_powers(games: &Vec<Game>) -> u32 {
-    games
-        .into_iter()
-        .map(|game| draw_power(&minimal_contents(&game)))
-        .sum()
-}
-
-fn is_valid_game(game: &Game) -> bool {
-    game.draws
-        .iter()
-        .all(|d| d.red <= 12 && d.green <= 13 && d.blue <= 14)
-}
-
+/// Parse a line of the puzzle input as a [`Game`]
 fn parse_game(line: &str) -> Game {
     let (id_part, draws_part) = line.split_once(": ").expect("Invalid line");
 
@@ -81,6 +76,7 @@ fn parse_game(line: &str) -> Game {
     )
 }
 
+/// Parse `Game {{ id }}` as a numeric id
 fn parse_id(id_string: &str) -> u32 {
     id_string
         .replace("Game ", "")
@@ -88,6 +84,7 @@ fn parse_id(id_string: &str) -> u32 {
         .expect(format!("Invalid game id {}", id_string).as_str())
 }
 
+/// Parse a comma separated list of drawn cubes as a [`Draw`]
 fn parse_draw(draw_str: &str) -> Draw {
     let mut draw = Draw::new(0, 0, 0);
     for (colour, count) in draw_str.split(", ").map(parse_cube) {
@@ -102,6 +99,7 @@ fn parse_draw(draw_str: &str) -> Draw {
     draw
 }
 
+/// Parse e.g. `17 green` as a numeric count and the colour string
 fn parse_cube(cube_str: &str) -> (&str, u8) {
     let (count_str, colour) = cube_str
         .split_once(" ")
@@ -115,6 +113,32 @@ fn parse_cube(cube_str: &str) -> (&str, u8) {
     );
 }
 
+/// This is the solution to part 1 - delegates validity to [`is_valid_game`]
+fn sum_valid_game_ids(games: &Vec<Game>) -> u32 {
+    games
+        .into_iter()
+        .filter(|&g| is_valid_game(g))
+        .map(|g| g.id)
+        .sum()
+}
+
+/// Do any draws have more than the expected number of cubes
+fn is_valid_game(game: &Game) -> bool {
+    game.draws
+        .iter()
+        .all(|d| d.red <= 12 && d.green <= 13 && d.blue <= 14)
+}
+
+/// This is the solution to part 2 - delegates finding the minimal bag contents to [`minimal_contents`] and turning
+/// each bag into it's power with [`draw_power`]
+fn sum_minimal_contents_powers(games: &Vec<Game>) -> u32 {
+    games
+        .into_iter()
+        .map(|game| draw_power(&minimal_contents(&game)))
+        .sum()
+}
+
+/// Find the most cubes seen of each colour across the draws, giving the minimum number of each that must be in the bag
 fn minimal_contents(game: &Game) -> Draw {
     let mut min_contents = Draw::new(0, 0, 0);
     for draw in &game.draws {
@@ -126,6 +150,7 @@ fn minimal_contents(game: &Game) -> Draw {
     min_contents
 }
 
+/// Given a draw, its "power" is the cube counts multiplied together
 fn draw_power(draw: &Draw) -> u32 {
     (draw.red as u32) * (draw.green as u32) * (draw.blue as u32)
 }
@@ -197,7 +222,7 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
 
     #[test]
     fn can_sum_valid_games() {
-        assert_eq!(sum_valid_games(&example_games()), 8);
+        assert_eq!(sum_valid_game_ids(&example_games()), 8);
     }
 
     #[test]
