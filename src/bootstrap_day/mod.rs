@@ -51,7 +51,7 @@ use std::fs;
 /// - The puzzle input is expected to be at `<project_root>/res/day-{day}-input`
 /// - It is expected this will be called by [`super::main()`] when the user elects to run day {day}.
 pub fn run() {{
-    let _contents = fs::read_to_string(\"res/day-{day}-input\").expect(\"Failed to read file\");
+    let _contents = fs::read_to_string(\"res/day-{day}-input.txt\").expect(\"Failed to read file\");
 }}
 
 #[cfg(test)]
