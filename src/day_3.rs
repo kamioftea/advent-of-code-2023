@@ -8,17 +8,17 @@ use std::fs;
 #[derive(Eq, PartialEq, Debug)]
 struct PartNumber {
     number: u32,
-    x: u32,
-    y: u32,
+    x: usize,
+    y: usize,
 }
 
 impl PartNumber {
-    fn new(number: u32, x: u32, y: u32) -> PartNumber {
+    fn new(number: u32, x: usize, y: usize) -> PartNumber {
         PartNumber { number, x, y }
     }
 }
 
-type Point = (u32, u32);
+type Point = (usize, usize);
 
 /// The entry point for running the solutions with the 'real' puzzle input.
 ///
@@ -29,7 +29,39 @@ pub fn run() {
 }
 
 fn parse_grid(input: &String) -> (Vec<PartNumber>, HashMap<Point, char>) {
-    todo!()
+    let mut parts = Vec::new();
+    let mut symbols = HashMap::new();
+    let mut num: u32 = 0;
+    let mut num_origin: Option<Point> = None;
+
+    for (y, line) in input.lines().enumerate() {
+        for (x, chr) in line.chars().enumerate() {
+            if !chr.is_digit(10) {
+                if let Some((x, y)) = num_origin {
+                    parts.push(PartNumber::new(num, x, y))
+                }
+                num = 0;
+                num_origin = None;
+            }
+
+            match chr {
+                '.' => {}
+                c if c.is_digit(10) => {
+                    num_origin = num_origin.or(Some((x, y)));
+                    num = num * 10 + chr.to_digit(10).expect("Tested with is_digit");
+                }
+                _ => {
+                    symbols.insert((x, y), chr);
+                }
+            }
+        }
+    }
+
+    if let Some((x, y)) = num_origin {
+        parts.push(PartNumber::new(num, x, y))
+    }
+
+    (parts, symbols)
 }
 
 #[cfg(test)]
@@ -73,7 +105,7 @@ mod tests {
             ((3, 4), '*'),
             ((5, 5), '+'),
             ((3, 8), '$'),
-            ((5, 8), '$'),
+            ((5, 8), '*'),
         ]
         .into_iter()
         .collect();
@@ -91,7 +123,7 @@ mod tests {
         for expected_part in expected_parts {
             assert!(
                 parts.contains(&expected_part),
-                "Expected part {:?} was not contained in the list of parts",
+                "Expected part {:?} is not in the list of parts",
                 expected_part
             );
         }
