@@ -66,7 +66,7 @@ fn parse_grid(input: &String) -> (Vec<PartNumber>, SymbolLookup) {
     (parts, symbols)
 }
 
-fn sum_valid_part_numbers(part_numbers: &Vec<PartNumber>, symbol_lookup: SymbolLookup) -> u32 {
+fn sum_valid_part_numbers(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> u32 {
     todo!()
 }
 
@@ -248,5 +248,13 @@ mod tests {
                 if expected { "" } else { " not" }
             )
         }
+    }
+
+    #[test]
+    fn can_sum_valid_part_numbers() {
+        assert_eq!(
+            sum_valid_part_numbers(&build_expected_parts(), &build_expected_symbol_lookup(),),
+            4361
+        )
     }
 }
