@@ -2,7 +2,6 @@
 //!
 //!
 
-use itertools::Itertools;
 use std::collections::HashMap;
 use std::fs;
 
@@ -138,27 +137,38 @@ fn get_adjacent_points(part_number: &PartNumber) -> Vec<Point> {
 }
 
 fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> Vec<Gear> {
-    part_numbers
+    let part_nums_adjacent_to_gear_points = part_numbers
         .iter()
-        .flat_map(|part_number| {
-            get_adjacent_points(part_number)
-                .into_iter()
-                .map(|point| (part_number.number, point))
-                .collect::<Vec<(u32, Point)>>()
-        })
-        .filter(|(_, point)| {
-            symbol_lookup
-                .get(point)
-                .filter(|&symbol| *symbol == '*')
-                .is_some()
-        })
-        .sorted_by(|(_, a), (_, b)| a.cmp(b))
-        .group_by(|(_, point)| point.clone())
-        .into_iter()
-        .map(|(_, group)| group.map(|(part, _)| part).collect::<Vec<u32>>())
+        .flat_map(explode_adjacent_points)
+        .filter(|(_, point)| is_point_a_gear(point, symbol_lookup));
+
+    let mut part_numbers_per_gear_point: HashMap<Point, Vec<u32>> = HashMap::new();
+    for (part_number, point) in part_nums_adjacent_to_gear_points {
+        part_numbers_per_gear_point
+            .entry(point)
+            .or_insert(Vec::new())
+            .push(part_number)
+    }
+
+    part_numbers_per_gear_point
+        .values()
         .filter(|parts| parts.len() == 2)
         .map(|parts| Gear::new(parts[0], parts[1]))
         .collect()
+}
+
+fn explode_adjacent_points(part_number: &PartNumber) -> Vec<(u32, Point)> {
+    get_adjacent_points(part_number)
+        .into_iter()
+        .map(|point| (part_number.number, point))
+        .collect::<Vec<(u32, Point)>>()
+}
+
+fn is_point_a_gear(point: &Point, symbol_lookup: &SymbolLookup) -> bool {
+    symbol_lookup
+        .get(point)
+        .filter(|&symbol| *symbol == '*')
+        .is_some()
 }
 
 fn sum_gear_ratios(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> u32 {
@@ -337,6 +347,21 @@ mod tests {
             find_gears(&example_part_numbers(), &example_symbol_lookup()),
             expected_gears
         )
+    }
+
+    #[test]
+    fn can_find_gears_with_shared_part_number() {
+        let example_grid = "\
+1...3
+.*.*.
+..4.."
+            .to_string();
+
+        let (part_numbers, symbol_lookup) = parse_grid(&example_grid);
+
+        let expected_gears = vec![Gear::new(1, 4), Gear::new(3, 4)];
+
+        assert_eq!(find_gears(&part_numbers, &symbol_lookup), expected_gears)
     }
 
     #[test]
