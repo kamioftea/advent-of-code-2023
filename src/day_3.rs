@@ -59,6 +59,11 @@ pub fn run() {
         "The sum of valid part numbers is {}",
         sum_valid_part_numbers(&part_numbers, &symbol_lookup)
     );
+
+    println!(
+        "The sum of gear ratios is {}",
+        sum_gear_ratios(&part_numbers, &symbol_lookup)
+    );
 }
 
 fn parse_grid(input: &String) -> (Vec<PartNumber>, SymbolLookup) {
@@ -147,6 +152,7 @@ fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> V
                 .filter(|&symbol| *symbol == '*')
                 .is_some()
         })
+        .sorted_by(|(_, a), (_, b)| a.cmp(b))
         .group_by(|(_, point)| point.clone())
         .into_iter()
         .map(|(_, group)| group.map(|(part, _)| part).collect::<Vec<u32>>())
@@ -156,7 +162,10 @@ fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> V
 }
 
 fn sum_gear_ratios(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> u32 {
-    todo!()
+    find_gears(part_numbers, symbol_lookup)
+        .iter()
+        .map(|Gear { part_1, part_2 }| part_1 * part_2)
+        .sum()
 }
 
 #[cfg(test)]
