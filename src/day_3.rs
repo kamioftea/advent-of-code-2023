@@ -27,7 +27,14 @@ type SymbolLookup = HashMap<Point, char>;
 /// - The puzzle input is expected to be at `<project_root>/res/day-3-input`
 /// - It is expected this will be called by [`super::main()`] when the user elects to run day 3.
 pub fn run() {
-    let _contents = fs::read_to_string("res/day-3-input.txt").expect("Failed to read file");
+    let contents = fs::read_to_string("res/day-3-input.txt").expect("Failed to read file");
+
+    let (part_numbers, symbol_lookup) = parse_grid(&contents);
+
+    println!(
+        "The sum of valid part numbers is {}",
+        sum_valid_part_numbers(&part_numbers, &symbol_lookup)
+    );
 }
 
 fn parse_grid(input: &String) -> (Vec<PartNumber>, SymbolLookup) {
@@ -67,7 +74,11 @@ fn parse_grid(input: &String) -> (Vec<PartNumber>, SymbolLookup) {
 }
 
 fn sum_valid_part_numbers(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> u32 {
-    todo!()
+    part_numbers
+        .iter()
+        .filter(|&part_number| has_adjacent_symbol(part_number, symbol_lookup))
+        .map(|part_number| part_number.number)
+        .sum()
 }
 
 fn has_adjacent_symbol(part_number: &PartNumber, symbol_lookup: &SymbolLookup) -> bool {
