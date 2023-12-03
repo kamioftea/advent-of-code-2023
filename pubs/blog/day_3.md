@@ -59,8 +59,8 @@ fn parse_grid(input: &String) -> (Vec<PartNumber>, HashMap<Point, char>) {
 
     for (y, line) in input.lines().enumerate() {
         for (x, chr) in line.chars().enumerate() {
-            // We only know we've completed a part number when we next see a non-digit character. Check for that here
-            // and emit the `PartNumber`.
+            // We only know we've completed a part number when we next see a non-digit
+            // character. Check for that here and emit the `PartNumber`.
             if !chr.is_digit(10) {
                 if let Some((x, y)) = num_origin {
                     parts.push(PartNumber::new(num, x, y))
@@ -72,7 +72,8 @@ fn parse_grid(input: &String) -> (Vec<PartNumber>, HashMap<Point, char>) {
             match chr {
                 // Represents a blank space
                 '.' => {}
-                // For PartNumbers build the number digit by digit, recording the origin on the first digit seen
+                // For PartNumbers build the number digit by digit, recording the 
+                // origin on the first digit seen
                 c if c.is_digit(10) => {
                     num_origin = num_origin.or(Some((x, y)));
                     num = num * 10 + chr.to_digit(10).expect("Tested with is_digit");
@@ -85,7 +86,8 @@ fn parse_grid(input: &String) -> (Vec<PartNumber>, HashMap<Point, char>) {
         }
     }
 
-    // push any in progress number at the end - this should be at the end of each line as noted
+    // push any in progress number at the end - this should be at the end of each 
+    // line as noted
     if let Some((x, y)) = num_origin {
         parts.push(PartNumber::new(num, x, y))
     }
@@ -178,7 +180,10 @@ I add tests from the puzzle description for which of the example numbers are val
 The implementations for these can be composed from built-in functions, and what I've already written. 
 
 ```rust
-fn sum_valid_part_numbers(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> u32 {
+fn sum_valid_part_numbers(
+  part_numbers: &Vec<PartNumber>, 
+  symbol_lookup: &SymbolLookup
+) -> u32 {
     part_numbers
         .iter()
         .filter(|&part_number| has_adjacent_symbol(part_number, symbol_lookup))
@@ -186,7 +191,10 @@ fn sum_valid_part_numbers(part_numbers: &Vec<PartNumber>, symbol_lookup: &Symbol
         .sum()
 }
 
-fn has_adjacent_symbol(part_number: &PartNumber, symbol_lookup: &SymbolLookup) -> bool {
+fn has_adjacent_symbol(
+  part_number: &PartNumber, 
+  symbol_lookup: &SymbolLookup
+) -> bool {
     return get_adjacent_points(part_number)
         .iter()
         .any(|point| symbol_lookup.contains_key(point));
@@ -256,7 +264,10 @@ The collections API lets me step through the plan in code (if I include `group_b
 to align all the types correctly, but I end up with this:
 
 ```rust
-fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> Vec<Gear> {
+fn find_gears(
+  part_numbers: &Vec<PartNumber>, 
+  symbol_lookup: &SymbolLookup
+) -> Vec<Gear> {
     part_numbers
         .iter()
         // Explode the numbers into pairs of (number, adjacent_point)
@@ -273,7 +284,8 @@ fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> V
                 .filter(|&symbol| *symbol == '*')
                 .is_some()
         })
-        // Each `*` appears once for each number it appears next to - group by the point
+        // Each `*` appears once for each number it appears next to - group by the 
+        // point
         .group_by(|(_, point)| point.clone())
         .into_iter()
         // Now that the grouping is done only the list of numbers is useful
@@ -291,7 +303,10 @@ quick and dirty fix is to sort by the co-ordinates so that each only appears in 
 better in a bit, I'll get it working first.
 
 ```rust
-fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> Vec<Gear> {
+fn find_gears(
+  part_numbers: &Vec<PartNumber>, 
+  symbol_lookup: &SymbolLookup
+) -> Vec<Gear> {
   part_numbers
       .iter()
       // ...
@@ -340,15 +355,20 @@ These are the refactorings I do:
   format.
 
 ```rust
-fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> Vec<Gear> {
-  // Since PartNumbers can have variable length it is easier to start with all the points adjacent to part numbers
-  // and then filter to part number / `*` point pairs` ...
+fn find_gears(
+  part_numbers: &Vec<PartNumber>, 
+  symbol_lookup: &SymbolLookup
+) -> Vec<Gear> {
+  // Since PartNumbers can have variable length it is easier to start with all the 
+  // points adjacent to part numbers // and then filter to part number / `*` point
+  // pairs ...
   let part_nums_adjacent_to_gear_points = part_numbers
       .iter()
       .flat_map(explode_adjacent_points)
       .filter(|(_, point)| is_point_a_gear_symbol(point, symbol_lookup));
 
-  // ... Then invert the relationship by grouping the numbers by the `*` they are adjacent to
+  // ... Then invert the relationship by grouping the numbers by the `*` they are 
+  // adjacent to
   let mut part_numbers_per_gear_point: HashMap<Point, Vec<u32>> = HashMap::new();
   for (part_number, point) in part_nums_adjacent_to_gear_points {
     part_numbers_per_gear_point
@@ -365,7 +385,8 @@ fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> V
       .collect()
 }
 
-/// Turn a PartNumber into a list of pairs of the (bare number, point) for each point it is adjacent to
+/// Turn a PartNumber into a list of pairs of the (bare number, point) for each 
+/// point it is adjacent to
 fn explode_adjacent_points(part_number: &PartNumber) -> Vec<(u32, Point)> {
   get_adjacent_points(part_number)
       .into_iter()
@@ -427,8 +448,11 @@ I can then rewrite `can_find_gears_with_shared_part_number` as:
 ```rust
 #[test]
 fn can_find_gears_with_shared_part_number() {
-  // ...
-  assert_contains_in_any_order(find_gears(&part_numbers, &symbol_lookup), expected_gears)
+    // ...
+    assert_contains_in_any_order(
+        find_gears(&part_numbers, &symbol_lookup), 
+        expected_gears
+    );
 }
 ```
 

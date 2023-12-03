@@ -175,7 +175,7 @@ fn get_adjacent_points(part_number: &PartNumber) -> Vec<Point> {
 /// Return a list of valid gears. A gear is any `*` symbol with exactly two adjacent PartNumbers.
 fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> Vec<Gear> {
     // Since PartNumbers can have variable length it is easier to start with all the points adjacent to part numbers
-    // and then filter to part number / `*` point pairs` ...
+    // and then filter to part number / `*` point pairs ...
     let part_nums_adjacent_to_gear_points = part_numbers
         .iter()
         .flat_map(explode_adjacent_points)
