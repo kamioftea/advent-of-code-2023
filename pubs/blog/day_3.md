@@ -96,7 +96,7 @@ fn parse_grid(input: &String) -> (Vec<PartNumber>, HashMap<Point, char>) {
 }
 ```
 
-## Part 1 - All around my ~Hat~ PartNumber
+## Part 1 - All around my ~~Hat~~ PartNumber
 
 The plan for part one is to iterate through the parsed numbers, filter out numbers that aren't adjacent to symbols, 
 then reduce them to the solution with `sum()`. To implement that filter I first need to be able to find all the 
