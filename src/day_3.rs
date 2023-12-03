@@ -2,6 +2,7 @@
 //!
 //!
 
+use itertools::Itertools;
 use std::collections::HashMap;
 use std::fs;
 
@@ -21,6 +22,29 @@ impl PartNumber {
 type Point = (usize, usize);
 
 type SymbolLookup = HashMap<Point, char>;
+
+#[derive(Eq, Debug)]
+struct Gear {
+    part_1: u32,
+    part_2: u32,
+}
+
+impl Gear {
+    fn new(part_1: u32, part_2: u32) -> Gear {
+        Gear { part_1, part_2 }
+    }
+}
+
+impl PartialEq for Gear {
+    fn eq(&self, other: &Self) -> bool {
+        (self.part_1 == other.part_1 && self.part_2 == other.part_2)
+            || (self.part_1 == other.part_2 && self.part_2 == other.part_1)
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(other)
+    }
+}
 
 /// The entry point for running the solutions with the 'real' puzzle input.
 ///
@@ -108,6 +132,29 @@ fn get_adjacent_points(part_number: &PartNumber) -> Vec<Point> {
     points
 }
 
+fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> Vec<Gear> {
+    part_numbers
+        .iter()
+        .flat_map(|part_number| {
+            get_adjacent_points(part_number)
+                .into_iter()
+                .map(|point| (part_number.number, point))
+                .collect::<Vec<(u32, Point)>>()
+        })
+        .filter(|(_, point)| {
+            symbol_lookup
+                .get(point)
+                .filter(|&symbol| *symbol == '*')
+                .is_some()
+        })
+        .group_by(|(_, point)| point.clone())
+        .into_iter()
+        .map(|(_, group)| group.map(|(part, _)| part).collect::<Vec<u32>>())
+        .filter(|parts| parts.len() == 2)
+        .map(|parts| Gear::new(parts[0], parts[1]))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use crate::day_3::*;
@@ -127,7 +174,7 @@ mod tests {
             .to_string();
     }
 
-    fn build_expected_parts() -> Vec<PartNumber> {
+    fn example_part_numbers() -> Vec<PartNumber> {
         vec![
             PartNumber::new(467, 0, 0),
             PartNumber::new(114, 5, 0),
@@ -142,7 +189,7 @@ mod tests {
         ]
     }
 
-    fn build_expected_symbol_lookup() -> SymbolLookup {
+    fn example_symbol_lookup() -> SymbolLookup {
         vec![
             ((3, 1), '*'),
             ((6, 3), '#'),
@@ -157,9 +204,9 @@ mod tests {
 
     #[test]
     fn can_parse_grid() {
-        let expected_parts = build_expected_parts();
+        let expected_parts = example_part_numbers();
 
-        let expected_symbol_lookup = build_expected_symbol_lookup();
+        let expected_symbol_lookup = example_symbol_lookup();
 
         let (parts, symbols) = parse_grid(&sample_input());
 
@@ -235,7 +282,7 @@ mod tests {
 
     #[test]
     fn can_determine_if_part_is_adjacent_to_a_symbol() {
-        let symbol_lookup = build_expected_symbol_lookup();
+        let symbol_lookup = example_symbol_lookup();
 
         let examples = vec![
             (PartNumber::new(467, 0, 0), true),
@@ -264,8 +311,18 @@ mod tests {
     #[test]
     fn can_sum_valid_part_numbers() {
         assert_eq!(
-            sum_valid_part_numbers(&build_expected_parts(), &build_expected_symbol_lookup(),),
+            sum_valid_part_numbers(&example_part_numbers(), &example_symbol_lookup(),),
             4361
+        )
+    }
+
+    #[test]
+    fn can_find_gears() {
+        let expected_gears = vec![Gear::new(467, 35), Gear::new(755, 598)];
+
+        assert_eq!(
+            find_gears(&example_part_numbers(), &example_symbol_lookup()),
+            expected_gears
         )
     }
 }
