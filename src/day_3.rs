@@ -82,33 +82,45 @@ pub fn run() {
 /// Parse a string representing a 2D grid into a list of part numbers and a lookup table of points with character
 /// symbols
 fn parse_grid(input: &String) -> (Vec<PartNumber>, SymbolLookup) {
+    // Setup output variables to populate during parsing
     let mut parts = Vec::new();
     let mut symbols = HashMap::new();
+
+    // Holds an in progress PartNumber whist its digits are being parsed
     let mut num: u32 = 0;
     let mut num_origin: Option<Point> = None;
+
+    /// Factors out completing any in progress PartNumber, and resetting the state when a boundary is reached
+    fn build_part_number_and_reset(
+        parts: &mut Vec<PartNumber>,
+        num: &mut u32,
+        num_origin: &mut Option<Point>,
+    ) {
+        if let Some((x, y)) = num_origin {
+            parts.push(PartNumber::new(num.clone(), x.clone(), y.clone()));
+
+            *num = 0;
+            *num_origin = None;
+        }
+    }
 
     for (y, line) in input.lines().enumerate() {
         for (x, chr) in line.chars().enumerate() {
             // We only know we've completed a part number when we next see a non-digit character. Check for that here
             // and emit the `PartNumber`.
-            //
-            // The if clauses need to be separate as Rust doesn't support mixed `if` and `if let` conditions yet.
             if !chr.is_digit(10) {
-                if let Some((x, y)) = num_origin {
-                    parts.push(PartNumber::new(num, x, y));
-
-                    num = 0;
-                    num_origin = None;
-                }
+                build_part_number_and_reset(&mut parts, &mut num, &mut num_origin);
             }
 
             match chr {
+                // Represents a blank space
                 '.' => {}
                 // For PartNumbers build the number digit by digit, recording the origin on the first digit seen
                 c if c.is_digit(10) => {
                     num_origin = num_origin.or(Some((x, y)));
                     num = num * 10 + chr.to_digit(10).expect("Tested with is_digit");
                 }
+                // Anything else is an arbitrary part symbol
                 _ => {
                     symbols.insert((x, y), chr);
                 }
@@ -116,12 +128,7 @@ fn parse_grid(input: &String) -> (Vec<PartNumber>, SymbolLookup) {
         }
 
         // Line breaks also split part numbers, so complete the current PartNumber if there is one
-        if let Some((x, y)) = num_origin {
-            parts.push(PartNumber::new(num, x, y));
-
-            num = 0;
-            num_origin = None;
-        }
+        build_part_number_and_reset(&mut parts, &mut num, &mut num_origin);
     }
 
     (parts, symbols)
@@ -191,7 +198,7 @@ fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> V
         .collect()
 }
 
-/// Turn a PartNumber into a list of pairs of the bare number and each point it is adjacent to
+/// Turn a PartNumber into a list of pairs of the (bare number, point) for each point it is adjacent to
 fn explode_adjacent_points(part_number: &PartNumber) -> Vec<(u32, Point)> {
     get_adjacent_points(part_number)
         .into_iter()
@@ -199,7 +206,7 @@ fn explode_adjacent_points(part_number: &PartNumber) -> Vec<(u32, Point)> {
         .collect::<Vec<(u32, Point)>>()
 }
 
-/// Returns true if a 2D co-ordinate maps to a `*` symbol
+/// Returns true if a given 2D co-ordinate maps to a `*` symbol
 fn is_point_a_gear_symbol(point: &Point, symbol_lookup: &SymbolLookup) -> bool {
     symbol_lookup
         .get(point)
@@ -351,7 +358,6 @@ mod tests {
             .to_string();
 
         let (part_numbers, symbol_lookup) = parse_grid(&example_grid);
-
         let expected_gears = vec![Gear::new(1, 3), Gear::new(2, 3)];
 
         assert_contains_in_any_order(find_gears(&part_numbers, &symbol_lookup), expected_gears)

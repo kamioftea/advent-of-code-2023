@@ -142,7 +142,7 @@ Fixing the code is a bit more tedious. I realise I probably need a regex, and af
 crate docs, I settle on using a similarly verbose replacement function.
 
 The regex itself is ok, but compiling a new one each time is wasteful, but it can't be declared as a static variable
-because it can't statically compile the Regex. Luckily someone's written a `lazy_static!` macro to fix just this
+because it can't statically compile the Regex. Luckily someone's written a `lazy_static!` macro to fix exactly this
 problem.
 
 ```rust
@@ -155,7 +155,7 @@ lazy_static! {
 
 The replacement function can match on the digit words and because it's only getting input from regex matches I know
 that's exhaustive even if the compiler doesn't. I went for a fairly verbose match expression here instead of looking
-the digit string up in a Map or Vec as I feel this more clearly expresses the intent.
+the digit string up in a Map or Vec as I feel this more accurately expresses the intent.
 
 ```rust
 fn substitute_digit_strings(line: &str) -> String {
@@ -202,10 +202,10 @@ link to Reddit where `u/Zefick` had helpfully posted:
 >
 > The examples do not cover such cases.
 
-I can however keep my replacement solution if I leave the letters that can overlap on each side. This also means I
-can go back to the basic replacement as the order no longer matters as the replacements no longer conflict, so it's back
-to the order not mattering. There is a bit of a code smell in that the tests are now relying on an implementation
-detail, but this is a quick fix to get the existing code working.
+I can reuse my replacement solution from part one if I leave the letters that can overlap on each side. This also
+means I can go back to the basic replacement as the order no longer matters as the replacements no longer conflict, so
+it's back to the order not mattering. There is a bit of a code smell in that the tests are now relying on an
+implementation detail, but this is a quick fix to get the existing code working.
 
 ```rust
 #[test]
@@ -239,8 +239,8 @@ The tests pass, and the correct answer is now generated when run against the puz
 
 The solution, whilst working isn't sitting right with me. The trick with keeping the surrounding digits works, but
 is not clear when read. I can add some comments explaining the logic, but I'd like to find a better way. The tests
-exposing the substitution hack also feels wrong. I can refactor the part two tests to just use a modified parse_input
-that just tests on the first and last digit, i.e. testing the expected behavior not the implementation details.
+exposing the substitution hack also feels wrong. I can refactor the part two tests to use a modified parse_input
+that only checks the first and last digit, i.e. testing the expected behavior not the implementation details.
 
 Some colleagues post ideas on Slack that they used regexes with lookahead to match both the numeric and textual
 digits, without consuming the match and missing the overlaps. That avoided the substitution, and could handle
@@ -361,13 +361,17 @@ fn parse_line(line: &str, extractor: &ValueExtractor) -> u32 {
     iter(line, extractor, 0, None, None)
 }
 ```
+
 The separate part functions can now be combined
+
 ```rust
 fn sum_calibration_values(input: &String, extractor: &ValueExtractor) -> u32 {
     input.lines().map(|line| parse_line(line, &extractor)).sum()
 }
 ```
+
 And the differences between the two parts are now nicely contained in an extractor for each:
+
 ```rust
 fn part_1_extractor() -> ValueExtractor {
     ValueExtractor {
@@ -421,7 +425,7 @@ fn overlapping_matches<'a>(line: &'a str, pattern: &Regex) -> Vec<&'a str> {
         // The next iteration should start from the next character after
         // the match to allow for overlaps
         *pos = digit.map(|m| m.start()).unwrap_or(0) + 1;
-        // For convenience return just the match contents
+        // For convenience, return only the match's contents
         digit.map(|m| m.as_str())
     })
         .collect()

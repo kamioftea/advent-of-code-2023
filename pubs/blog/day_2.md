@@ -43,7 +43,8 @@ impl Game {
 }
 ```
 
-The test cases just need to be written out from the example data. A little tedious, but only needs to be done once.
+The test cases need to be transcribed into this representation from the example data. A little tedious, but only needs 
+to be done once.
 
 ```rust
 #[test]
@@ -137,8 +138,8 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
 ```
 
 Then I can write out the top level logic using built in iterable methods, delegating the actual validation to another
-function. Then write that function. I've used hardcoded thresholds here because it'll be easy enough to refactor them
-out to a parameter later if part two needs different values.
+function. Then write that function. I've used hardcoded thresholds here, I can to refactor them out later if part 
+two needs different values.
 
 ```rust
 fn sum_valid_games(input: &String) -> u32 {

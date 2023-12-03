@@ -77,7 +77,7 @@ fn overlapping_matches<'a>(line: &'a str, pattern: &Regex) -> Vec<&'a str> {
         // The next iteration should start from the next character after
         // the match to allow for overlaps
         *pos = digit.map(|m| m.start()).unwrap_or(0) + 1;
-        // For convenience return just the match contents
+        // For convenience return only the match's contents
         digit.map(|m| m.as_str())
     })
     .collect()
