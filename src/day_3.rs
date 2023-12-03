@@ -20,6 +20,8 @@ impl PartNumber {
 
 type Point = (usize, usize);
 
+type SymbolLookup = HashMap<Point, char>;
+
 /// The entry point for running the solutions with the 'real' puzzle input.
 ///
 /// - The puzzle input is expected to be at `<project_root>/res/day-3-input`
@@ -28,7 +30,7 @@ pub fn run() {
     let _contents = fs::read_to_string("res/day-3-input.txt").expect("Failed to read file");
 }
 
-fn parse_grid(input: &String) -> (Vec<PartNumber>, HashMap<Point, char>) {
+fn parse_grid(input: &String) -> (Vec<PartNumber>, SymbolLookup) {
     let mut parts = Vec::new();
     let mut symbols = HashMap::new();
     let mut num: u32 = 0;
@@ -64,10 +66,40 @@ fn parse_grid(input: &String) -> (Vec<PartNumber>, HashMap<Point, char>) {
     (parts, symbols)
 }
 
+fn sum_valid_part_numbers(part_numbers: &Vec<PartNumber>, symbol_lookup: SymbolLookup) -> u32 {
+    todo!()
+}
+
+fn has_adjacent_symbol(part_number: &PartNumber, symbol_lookup: &SymbolLookup) -> bool {
+    return get_adjacent_points(part_number)
+        .iter()
+        .any(|point| symbol_lookup.contains_key(point));
+}
+
+fn get_adjacent_points(part_number: &PartNumber) -> Vec<Point> {
+    let mut points = Vec::new();
+    let length = part_number.number.ilog10() as usize + 1;
+    let start = part_number.x.checked_sub(1).unwrap_or(0);
+    let end = part_number.x + length;
+
+    for x in start..=end {
+        if part_number.y > 0 {
+            points.push((x, part_number.y - 1))
+        }
+
+        if x < part_number.x || x >= end {
+            points.push((x, part_number.y))
+        }
+
+        points.push((x, part_number.y + 1))
+    }
+
+    points
+}
+
 #[cfg(test)]
 mod tests {
     use crate::day_3::*;
-    use std::collections::HashMap;
 
     fn sample_input() -> String {
         return "\
@@ -84,9 +116,8 @@ mod tests {
             .to_string();
     }
 
-    #[test]
-    fn can_parse_grid() {
-        let expected_parts = vec![
+    fn build_expected_parts() -> Vec<PartNumber> {
+        vec![
             PartNumber::new(467, 0, 0),
             PartNumber::new(114, 5, 0),
             PartNumber::new(35, 2, 2),
@@ -97,9 +128,11 @@ mod tests {
             PartNumber::new(755, 6, 7),
             PartNumber::new(664, 1, 9),
             PartNumber::new(598, 5, 9),
-        ];
+        ]
+    }
 
-        let expected_symbol_lookup: HashMap<Point, char> = vec![
+    fn build_expected_symbol_lookup() -> SymbolLookup {
+        vec![
             ((3, 1), '*'),
             ((6, 3), '#'),
             ((3, 4), '*'),
@@ -108,7 +141,14 @@ mod tests {
             ((5, 8), '*'),
         ]
         .into_iter()
-        .collect();
+        .collect()
+    }
+
+    #[test]
+    fn can_parse_grid() {
+        let expected_parts = build_expected_parts();
+
+        let expected_symbol_lookup = build_expected_symbol_lookup();
 
         let (parts, symbols) = parse_grid(&sample_input());
 
@@ -145,6 +185,68 @@ mod tests {
                 expected_point,
                 symbols.get(expected_point)
             );
+        }
+    }
+
+    #[test]
+    fn can_find_adjacent_points() {
+        #[rustfmt::skip] // Positional coordinates
+        let examples = vec![
+            (PartNumber::new(99, 0, 0), vec![
+                                (2, 0),
+                (0, 1), (1, 1), (2, 1)
+            ]),
+            (PartNumber::new(1, 1, 1), vec![
+                (0, 0), (1, 0), (2, 0),
+                (0, 1)        , (2, 1),
+                (0, 2), (1, 2), (2, 2),
+            ]),
+        ];
+
+        for (part_number, expected_points) in examples {
+            let actual_points = get_adjacent_points(&part_number);
+            assert_eq!(
+                actual_points.len(),
+                expected_points.len(),
+                "Points lists were not the same length.\nExpected: {:?}\nActual  : {:?}",
+                expected_points,
+                actual_points
+            );
+            for expected_point in expected_points {
+                assert!(
+                    actual_points.contains(&expected_point),
+                    "{:?} is not in the list of points",
+                    expected_point
+                )
+            }
+        }
+    }
+
+    #[test]
+    fn can_determine_if_part_is_adjacent_to_a_symbol() {
+        let symbol_lookup = build_expected_symbol_lookup();
+
+        let examples = vec![
+            (PartNumber::new(467, 0, 0), true),
+            (PartNumber::new(114, 5, 0), false),
+            (PartNumber::new(35, 2, 2), true),
+            (PartNumber::new(633, 6, 2), true),
+            (PartNumber::new(617, 0, 4), true),
+            (PartNumber::new(58, 7, 5), false),
+            (PartNumber::new(592, 2, 6), true),
+            (PartNumber::new(755, 6, 7), true),
+            (PartNumber::new(664, 1, 9), true),
+            (PartNumber::new(598, 5, 9), true),
+        ];
+
+        for (part_number, expected) in examples {
+            assert_eq!(
+                has_adjacent_symbol(&part_number, &symbol_lookup),
+                expected,
+                "{:?} should{} have an adjacent symbol",
+                part_number,
+                if expected { "" } else { " not" }
+            )
         }
     }
 }
