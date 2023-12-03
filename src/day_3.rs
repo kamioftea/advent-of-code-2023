@@ -1,10 +1,19 @@
 //! This is my solution for [Advent of Code - Day 3: _Gear Ratios_](https://adventofcode.com/2023/day/3)
 //!
+//! [`parse_grid`] turns the plain text 2D grid of characters, in to a list of [`PartNumber`]s and a [`SymbolLookup`].
 //!
+//! [`sum_valid_part_numbers`] solves part one, delegating to [`has_adjacent_symbol`] and [`get_adjacent_points`] to
+//! determine if each number is valid.
+//!
+//! [`sum_gear_ratios`] solves part two. The key logic is in [`find_gears`] which uses
+//! * [`explode_adjacent_points`] (which uses [`get_adjacent_points`] again) to list all adjacent points
+//! * [`is_point_a_gear_symbol`] to filter that list to `*` symbols that might be gears
+//! * Then turns those that are valid into the expected list of [`Gear`]s
 
 use std::collections::HashMap;
 use std::fs;
 
+/// Represents a part number as the position of the first digit, and the number it represents
 #[derive(Eq, PartialEq, Debug)]
 struct PartNumber {
     number: u32,
@@ -18,10 +27,15 @@ impl PartNumber {
     }
 }
 
+/// A point in 2D space
 type Point = (usize, usize);
 
+/// A map of 2D points to the part symbol at that point
 type SymbolLookup = HashMap<Point, char>;
 
+/// A representation of a gear by the two part numbers that make up its "gear ratio"
+///
+/// This type exists to implement PartialEq regardless of number ordering
 #[derive(Eq, Debug)]
 struct Gear {
     part_1: u32,
@@ -65,6 +79,8 @@ pub fn run() {
     );
 }
 
+/// Parse a string representing a 2D grid into a list of part numbers and a lookup table of points with character
+/// symbols
 fn parse_grid(input: &String) -> (Vec<PartNumber>, SymbolLookup) {
     let mut parts = Vec::new();
     let mut symbols = HashMap::new();
@@ -73,16 +89,22 @@ fn parse_grid(input: &String) -> (Vec<PartNumber>, SymbolLookup) {
 
     for (y, line) in input.lines().enumerate() {
         for (x, chr) in line.chars().enumerate() {
+            // We only know we've completed a part number when we next see a non-digit character. Check for that here
+            // and emit the `PartNumber`.
+            //
+            // The if clauses need to be separate as Rust doesn't support mixed `if` and `if let` conditions yet.
             if !chr.is_digit(10) {
                 if let Some((x, y)) = num_origin {
-                    parts.push(PartNumber::new(num, x, y))
+                    parts.push(PartNumber::new(num, x, y));
+
+                    num = 0;
+                    num_origin = None;
                 }
-                num = 0;
-                num_origin = None;
             }
 
             match chr {
                 '.' => {}
+                // For PartNumbers build the number digit by digit, recording the origin on the first digit seen
                 c if c.is_digit(10) => {
                     num_origin = num_origin.or(Some((x, y)));
                     num = num * 10 + chr.to_digit(10).expect("Tested with is_digit");
@@ -92,15 +114,20 @@ fn parse_grid(input: &String) -> (Vec<PartNumber>, SymbolLookup) {
                 }
             }
         }
-    }
 
-    if let Some((x, y)) = num_origin {
-        parts.push(PartNumber::new(num, x, y))
+        // Line breaks also split part numbers, so complete the current PartNumber if there is one
+        if let Some((x, y)) = num_origin {
+            parts.push(PartNumber::new(num, x, y));
+
+            num = 0;
+            num_origin = None;
+        }
     }
 
     (parts, symbols)
 }
 
+/// Solves part 1 - the sum of part numbers next to a symbol
 fn sum_valid_part_numbers(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> u32 {
     part_numbers
         .iter()
@@ -109,12 +136,14 @@ fn sum_valid_part_numbers(part_numbers: &Vec<PartNumber>, symbol_lookup: &Symbol
         .sum()
 }
 
+/// Part numbers are valid if adjacent to a symbol
 fn has_adjacent_symbol(part_number: &PartNumber, symbol_lookup: &SymbolLookup) -> bool {
     return get_adjacent_points(part_number)
         .iter()
         .any(|point| symbol_lookup.contains_key(point));
 }
 
+/// Return the list of points adjacent to the whole part number that have non-negative co-ordinates
 fn get_adjacent_points(part_number: &PartNumber) -> Vec<Point> {
     let mut points = Vec::new();
     let length = part_number.number.ilog10() as usize + 1;
@@ -136,12 +165,16 @@ fn get_adjacent_points(part_number: &PartNumber) -> Vec<Point> {
     points
 }
 
+/// Return a list of valid gears. A gear is any `*` symbol with exactly two adjacent PartNumbers.
 fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> Vec<Gear> {
+    // Since PartNumbers can have variable length it is easier to start with all the points adjacent to part numbers
+    // and then filter to part number / `*` point pairs` ...
     let part_nums_adjacent_to_gear_points = part_numbers
         .iter()
         .flat_map(explode_adjacent_points)
-        .filter(|(_, point)| is_point_a_gear(point, symbol_lookup));
+        .filter(|(_, point)| is_point_a_gear_symbol(point, symbol_lookup));
 
+    // ... Then invert the relationship by grouping the numbers by the `*` they are adjacent to
     let mut part_numbers_per_gear_point: HashMap<Point, Vec<u32>> = HashMap::new();
     for (part_number, point) in part_nums_adjacent_to_gear_points {
         part_numbers_per_gear_point
@@ -150,6 +183,7 @@ fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> V
             .push(part_number)
     }
 
+    // Any that have the required two numbers are the `Gear`s to return
     part_numbers_per_gear_point
         .values()
         .filter(|parts| parts.len() == 2)
@@ -157,6 +191,7 @@ fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> V
         .collect()
 }
 
+/// Turn a PartNumber into a list of pairs of the bare number and each point it is adjacent to
 fn explode_adjacent_points(part_number: &PartNumber) -> Vec<(u32, Point)> {
     get_adjacent_points(part_number)
         .into_iter()
@@ -164,13 +199,15 @@ fn explode_adjacent_points(part_number: &PartNumber) -> Vec<(u32, Point)> {
         .collect::<Vec<(u32, Point)>>()
 }
 
-fn is_point_a_gear(point: &Point, symbol_lookup: &SymbolLookup) -> bool {
+/// Returns true if a 2D co-ordinate maps to a `*` symbol
+fn is_point_a_gear_symbol(point: &Point, symbol_lookup: &SymbolLookup) -> bool {
     symbol_lookup
         .get(point)
         .filter(|&symbol| *symbol == '*')
         .is_some()
 }
 
+/// Solution to part 2 - finds all the valid gears and sums the multiplications of their "gear ratio" numbers.
 fn sum_gear_ratios(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> u32 {
     find_gears(part_numbers, symbol_lookup)
         .iter()
