@@ -155,6 +155,10 @@ fn find_gears(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> V
         .collect()
 }
 
+fn sum_gear_ratios(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup) -> u32 {
+    todo!()
+}
+
 #[cfg(test)]
 mod tests {
     use crate::day_3::*;
@@ -324,5 +328,13 @@ mod tests {
             find_gears(&example_part_numbers(), &example_symbol_lookup()),
             expected_gears
         )
+    }
+
+    #[test]
+    fn can_sum_gear_ratios() {
+        assert_eq!(
+            sum_gear_ratios(&example_part_numbers(), &example_symbol_lookup()),
+            467835
+        );
     }
 }
