@@ -181,6 +181,7 @@ fn sum_gear_ratios(part_numbers: &Vec<PartNumber>, symbol_lookup: &SymbolLookup)
 #[cfg(test)]
 mod tests {
     use crate::day_3::*;
+    use crate::helpers::test::assert_contains_in_any_order;
 
     fn sample_input() -> String {
         return "\
@@ -233,40 +234,9 @@ mod tests {
 
         let (parts, symbols) = parse_grid(&sample_input());
 
-        assert_eq!(
-            parts.len(),
-            expected_parts.len(),
-            "The length of parsed parts({}) does not match the expected length({})",
-            parts.len(),
-            expected_parts.len()
-        );
+        assert_contains_in_any_order(parts, expected_parts);
 
-        for expected_part in expected_parts {
-            assert!(
-                parts.contains(&expected_part),
-                "Expected part {:?} is not in the list of parts",
-                expected_part
-            );
-        }
-
-        assert_eq!(
-            symbols.len(),
-            expected_symbol_lookup.len(),
-            "The length of the symbol lookup({}) does not match the expected length({})",
-            symbols.len(),
-            expected_symbol_lookup.len()
-        );
-
-        for (expected_point, expected_symbol) in &expected_symbol_lookup {
-            assert_eq!(
-                symbols.get(expected_point),
-                Some(expected_symbol),
-                "Expected symbol {:?} at {:?}, found: {:?}",
-                expected_symbol,
-                expected_point,
-                symbols.get(expected_point)
-            );
-        }
+        assert_contains_in_any_order(symbols, expected_symbol_lookup);
     }
 
     #[test]
@@ -285,21 +255,7 @@ mod tests {
         ];
 
         for (part_number, expected_points) in examples {
-            let actual_points = get_adjacent_points(&part_number);
-            assert_eq!(
-                actual_points.len(),
-                expected_points.len(),
-                "Points lists were not the same length.\nExpected: {:?}\nActual  : {:?}",
-                expected_points,
-                actual_points
-            );
-            for expected_point in expected_points {
-                assert!(
-                    actual_points.contains(&expected_point),
-                    "{:?} is not in the list of points",
-                    expected_point
-                )
-            }
+            assert_contains_in_any_order(get_adjacent_points(&part_number), expected_points);
         }
     }
 
@@ -343,25 +299,25 @@ mod tests {
     fn can_find_gears() {
         let expected_gears = vec![Gear::new(467, 35), Gear::new(755, 598)];
 
-        assert_eq!(
+        assert_contains_in_any_order(
             find_gears(&example_part_numbers(), &example_symbol_lookup()),
-            expected_gears
+            expected_gears,
         )
     }
 
     #[test]
     fn can_find_gears_with_shared_part_number() {
         let example_grid = "\
-1...3
+1...2
 .*.*.
-..4.."
+..3.."
             .to_string();
 
         let (part_numbers, symbol_lookup) = parse_grid(&example_grid);
 
-        let expected_gears = vec![Gear::new(1, 4), Gear::new(3, 4)];
+        let expected_gears = vec![Gear::new(1, 3), Gear::new(2, 3)];
 
-        assert_eq!(find_gears(&part_numbers, &symbol_lookup), expected_gears)
+        assert_contains_in_any_order(find_gears(&part_numbers, &symbol_lookup), expected_gears)
     }
 
     #[test]

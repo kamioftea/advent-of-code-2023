@@ -2,6 +2,7 @@ mod bootstrap_day;
 mod day_1;
 mod day_2;
 mod day_3;
+mod helpers;
 
 use bootstrap_day::bootstrap_day;
 use std::io::{self, Write};
