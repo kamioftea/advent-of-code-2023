@@ -1,9 +1,13 @@
 //! This is my solution for [Advent of Code - Day 4: _Scratchcards_](https://adventofcode.com/2023/day/4)
 //!
+//! [`Scratchcard`] handles parsing ([`Scratchcard::from`]), and scoring ([`Scratchcard::match_count`] and
+//! [`Scratchcard::score`]).
 //!
+//! Part 1 is solved by [`sum_scores`], part 2 by [`calculate_total_cards`].
 
 use std::collections::HashSet;
 use std::fs;
+use std::iter::Sum;
 
 /// Represents a scratchcard (one line of input)
 #[derive(Eq, PartialEq, Debug)]
@@ -40,6 +44,7 @@ impl Scratchcard {
             .numbers_you_have
             .intersection(&self.winning_numbers)
             .count();
+
         matches
     }
 
@@ -47,6 +52,10 @@ impl Scratchcard {
     fn score(&self) -> i32 {
         let matches = self.match_count();
 
+        // Left shift needs to start from one, then each shift doubles the number.
+        // This means the first match should start at 1 and shift it 0 times.
+        // Handily the special case (0 matches scores 0 points) is the only case
+        // that hits the `None` branch of `checked_sub`.
         matches.checked_sub(1).map(|power| 1 << power).unwrap_or(0)
     }
 }
@@ -86,9 +95,12 @@ fn calculate_total_cards(scratchcards: &Vec<Scratchcard>) -> i32 {
     // At the start there is one of each card
     let mut counts: Vec<i32> = (0..scratchcards.len()).map(|_| 1).collect();
 
-    for (card_index, scratchcard) in scratchcards.iter().enumerate() {
-        for insert_index in 1..=scratchcard.match_count() {
-            counts[card_index + insert_index] += counts[card_index]
+    for (current_card_index, scratchcard) in scratchcards.iter().enumerate() {
+        // Each copy of the card (original + those added by previous loops) adds one card at each
+        let copies_of_current_card = counts[current_card_index];
+
+        for insert_offset in 1..=scratchcard.match_count() {
+            counts[current_card_index + insert_offset] += copies_of_current_card
         }
     }
 
