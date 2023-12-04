@@ -5,7 +5,7 @@
 use std::collections::HashSet;
 use std::fs;
 
-///
+/// Represents a scratchcard (one line of input)
 #[derive(Eq, PartialEq, Debug)]
 struct Scratchcard {
     winning_numbers: HashSet<i32>,
@@ -13,6 +13,7 @@ struct Scratchcard {
 }
 
 impl From<&str> for Scratchcard {
+    /// Parse a string in the format `Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53`
     fn from(value: &str) -> Self {
         fn parse_set(numbers: &str) -> HashSet<i32> {
             numbers
@@ -33,6 +34,7 @@ impl From<&str> for Scratchcard {
 }
 
 impl Scratchcard {
+    /// The number of numbers you have that match a winning number
     fn match_count(&self) -> usize {
         let matches = self
             .numbers_you_have
@@ -41,6 +43,7 @@ impl Scratchcard {
         matches
     }
 
+    /// The first match scores one, each subsequent match doubles the score
     fn score(&self) -> i32 {
         let matches = self.match_count();
 
@@ -67,14 +70,18 @@ pub fn run() {
     );
 }
 
+/// Parse each line as a card
 fn parse_input(input: &String) -> Vec<Scratchcard> {
     input.lines().map(Scratchcard::from).collect()
 }
 
+/// Part 1 solution - calculate and sum the scores for all cards
 fn sum_scores(scratchcards: &Vec<Scratchcard>) -> i32 {
     scratchcards.iter().map(Scratchcard::score).sum()
 }
 
+/// Part 2 solution - each card wins a copy of the next n cards where n is the number of winning matches. This is
+/// guaranteed not to overflow the list of available cards.
 fn calculate_total_cards(scratchcards: &Vec<Scratchcard>) -> i32 {
     // At the start there is one of each card
     let mut counts: Vec<i32> = (0..scratchcards.len()).map(|_| 1).collect();
