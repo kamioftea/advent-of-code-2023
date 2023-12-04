@@ -126,14 +126,16 @@ impl Scratchcard {
     }
 }
 
-/// Part 2 solution - each card wins a copy of the next n cards where n is the number of winning matches. This is
-/// guaranteed not to overflow the list of available cards.
+/// Part 2 solution - each card wins a copy of the next n cards where n is the 
+/// number of winning matches. This is guaranteed not to overflow the list of 
+/// available cards.
 fn calculate_total_cards(scratchcards: &Vec<Scratchcard>) -> i32 {
     // At the start there is one of each card
     let mut counts: Vec<i32> = (0..scratchcards.len()).map(|_| 1).collect();
 
     for (current_card_index, scratchcard) in scratchcards.iter().enumerate() {
-        // Each copy of the card (original + those added by previous loops) adds one card at each step
+        // Each copy of the card (original + those added by previous loops) 
+        // adds one card at each step
         let copies_of_current_card = counts[current_card_index];
 
         for insert_offset in 1..=scratchcard.match_count() {
