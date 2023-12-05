@@ -2,20 +2,22 @@
 //!
 //!
 
+use crate::day_5::Category::*;
 use itertools::Itertools;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::fs;
 use std::str::FromStr;
 
 #[derive(Eq, PartialEq, Debug)]
 struct Range {
-    start: i32,
-    delta: i32,
-    length: i32,
+    start: i64,
+    delta: i64,
+    length: i64,
 }
 
 impl Range {
-    fn new(start: i32, delta: i32, length: i32) -> Range {
+    fn new(start: i64, delta: i64, length: i64) -> Range {
         Range {
             start,
             delta,
@@ -58,27 +60,27 @@ impl FromStr for Category {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "seed" => Ok(Category::Seed),
-            "soil" => Ok(Category::Soil),
-            "fertilizer" => Ok(Category::Fertilizer),
-            "water" => Ok(Category::Water),
-            "light" => Ok(Category::Light),
-            "temperature" => Ok(Category::Temperature),
-            "humidity" => Ok(Category::Humidity),
-            "location" => Ok(Category::Location),
+            "seed" => Ok(Seed),
+            "soil" => Ok(Soil),
+            "fertilizer" => Ok(Fertilizer),
+            "water" => Ok(Water),
+            "light" => Ok(Light),
+            "temperature" => Ok(Temperature),
+            "humidity" => Ok(Humidity),
+            "location" => Ok(Location),
             _ => Err(()),
         }
     }
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 struct Id {
     category: Category,
-    value: i32,
+    value: i64,
 }
 
 impl Id {
-    fn new(category: Category, value: i32) -> Id {
+    fn new(category: Category, value: i64) -> Id {
         Id { category, value }
     }
 }
@@ -88,7 +90,22 @@ impl Id {
 /// - The puzzle input is expected to be at `<project_root>/res/day-5-input`
 /// - It is expected this will be called by [`super::main()`] when the user elects to run day 5.
 pub fn run() {
-    let _contents = fs::read_to_string("res/day-5-input.txt").expect("Failed to read file");
+    let contents = fs::read_to_string("res/day-5-input.txt").expect("Failed to read file");
+
+    let (seeds, almanac) = parse_input(&contents);
+
+    println!(
+        "The nearest location_id is: {}",
+        find_nearest_location(&seeds, &almanac)
+    )
+}
+
+fn find_nearest_location(seeds: &Vec<Id>, almanac: &HashMap<Category, AlmanacMap>) -> i64 {
+    seeds
+        .iter()
+        .map(|seed| progress_id_to(seed.clone(), Location, almanac).value)
+        .min()
+        .unwrap_or(0)
 }
 
 fn parse_input(input: &String) -> (Vec<Id>, HashMap<Category, AlmanacMap>) {
@@ -100,8 +117,8 @@ fn parse_input(input: &String) -> (Vec<Id>, HashMap<Category, AlmanacMap>) {
 fn parse_seeds(input: &str) -> Vec<Id> {
     input
         .split(" ")
-        .filter_map(|id| id.parse::<i32>().ok())
-        .map(|value| Id::new(Category::Seed, value))
+        .filter_map(|id| id.parse::<i64>().ok())
+        .map(|value| Id::new(Seed, value))
         .collect()
 }
 
@@ -134,11 +151,37 @@ fn parse_header(header_spec: &str) -> (Category, Category) {
 }
 
 fn parse_range(range_spec: &str) -> Range {
-    let parts: Vec<i32> = range_spec
+    let parts: Vec<i64> = range_spec
         .split(" ")
         .filter_map(|part| part.parse().ok())
         .collect();
-    Range::new(parts[0], parts[1] - parts[0], parts[2])
+    if parts.len() < 3 {
+        println!("error parsing {}, got {:?}", range_spec, parts)
+    }
+
+    Range::new(parts[1], parts[0] - parts[1], parts[2])
+}
+
+fn progress_id(id: &Id, almanac: &HashMap<Category, AlmanacMap>) -> Id {
+    let mapper = almanac.get(&id.category).unwrap();
+    for range in &mapper.ranges {
+        if id.value < range.start {
+            return Id::new(mapper.destination, id.value);
+        }
+        if id.value < range.start + range.length {
+            return Id::new(mapper.destination, id.value + range.delta);
+        }
+    }
+
+    Id::new(mapper.destination, id.value)
+}
+
+fn progress_id_to(id: Id, category: Category, almanac: &HashMap<Category, AlmanacMap>) -> Id {
+    return if id.category == category {
+        id
+    } else {
+        progress_id_to(progress_id(&id, almanac), category, almanac)
+    };
 }
 
 #[cfg(test)]
@@ -149,82 +192,82 @@ mod tests {
 
     fn example_seeds() -> Vec<Id> {
         vec![
-            Id::new(Category::Seed, 79),
-            Id::new(Category::Seed, 14),
-            Id::new(Category::Seed, 55),
-            Id::new(Category::Seed, 13),
+            Id::new(Seed, 79),
+            Id::new(Seed, 14),
+            Id::new(Seed, 55),
+            Id::new(Seed, 13),
         ]
     }
 
-    fn example_maps() -> HashMap<Category, AlmanacMap> {
+    fn example_almanac() -> HashMap<Category, AlmanacMap> {
         vec![
             (
-                Category::Seed,
+                Seed,
                 AlmanacMap::new(
-                    Category::Seed,
-                    Category::Soil,
-                    vec![Range::new(50, 48, 2), Range::new(52, -2, 48)],
+                    Seed,
+                    Soil,
+                    vec![Range::new(50, 2, 48), Range::new(98, -48, 2)],
                 ),
             ),
             (
-                Category::Soil,
+                Soil,
                 AlmanacMap::new(
-                    Category::Soil,
-                    Category::Fertilizer,
+                    Soil,
+                    Fertilizer,
                     vec![
-                        Range::new(0, 15, 37),
-                        Range::new(37, 15, 2),
-                        Range::new(39, -39, 15),
+                        Range::new(0, 39, 15),
+                        Range::new(15, -15, 37),
+                        Range::new(52, -15, 2),
                     ],
                 ),
             ),
             (
-                Category::Fertilizer,
+                Fertilizer,
                 AlmanacMap::new(
-                    Category::Fertilizer,
-                    Category::Water,
+                    Fertilizer,
+                    Water,
                     vec![
-                        Range::new(0, 11, 42),
-                        Range::new(42, -42, 7),
-                        Range::new(49, 4, 8),
-                        Range::new(57, -50, 4),
+                        Range::new(0, 42, 7),
+                        Range::new(7, 50, 4),
+                        Range::new(11, -11, 42),
+                        Range::new(53, -4, 8),
                     ],
                 ),
             ),
             (
-                Category::Water,
+                Water,
                 AlmanacMap::new(
-                    Category::Water,
-                    Category::Light,
-                    vec![Range::new(18, 7, 70), Range::new(88, -70, 7)],
+                    Water,
+                    Light,
+                    vec![Range::new(18, 70, 7), Range::new(25, -7, 70)],
                 ),
             ),
             (
-                Category::Light,
+                Light,
                 AlmanacMap::new(
-                    Category::Light,
-                    Category::Temperature,
+                    Light,
+                    Temperature,
                     vec![
-                        Range::new(45, 32, 23),
-                        Range::new(68, -4, 13),
-                        Range::new(81, -36, 19),
+                        Range::new(45, 36, 19),
+                        Range::new(64, 4, 13),
+                        Range::new(77, -32, 23),
                     ],
                 ),
             ),
             (
-                Category::Temperature,
+                Temperature,
                 AlmanacMap::new(
-                    Category::Temperature,
-                    Category::Humidity,
-                    vec![Range::new(0, 69, 1), Range::new(1, -1, 69)],
+                    Temperature,
+                    Humidity,
+                    vec![Range::new(0, 1, 69), Range::new(69, -69, 1)],
                 ),
             ),
             (
-                Category::Humidity,
+                Humidity,
                 AlmanacMap::new(
-                    Category::Humidity,
-                    Category::Location,
-                    vec![Range::new(56, 37, 4), Range::new(60, -4, 37)],
+                    Humidity,
+                    Location,
+                    vec![Range::new(56, 4, 37), Range::new(93, -37, 4)],
                 ),
             ),
         ]
@@ -273,6 +316,46 @@ humidity-to-location map:
         let (actual_seeds, actual_maps) = parse_input(&input);
 
         assert_eq!(actual_seeds, example_seeds());
-        assert_contains_in_any_order(actual_maps, example_maps());
+        assert_contains_in_any_order(actual_maps, example_almanac());
+    }
+
+    #[test]
+    fn can_progress_id() {
+        let almanac = example_almanac();
+
+        assert_eq!(progress_id(&Id::new(Seed, 79), &almanac), Id::new(Soil, 81));
+        assert_eq!(progress_id(&Id::new(Seed, 14), &almanac), Id::new(Soil, 14));
+        assert_eq!(progress_id(&Id::new(Seed, 55), &almanac), Id::new(Soil, 57));
+        assert_eq!(progress_id(&Id::new(Seed, 13), &almanac), Id::new(Soil, 13));
+    }
+
+    #[test]
+    fn can_progress_id_to_location() {
+        let almanac = example_almanac();
+
+        assert_eq!(
+            progress_id_to(Id::new(Seed, 79), Location, &almanac),
+            Id::new(Location, 82)
+        );
+        assert_eq!(
+            progress_id_to(Id::new(Seed, 14), Location, &almanac),
+            Id::new(Location, 43)
+        );
+        assert_eq!(
+            progress_id_to(Id::new(Seed, 55), Location, &almanac),
+            Id::new(Location, 86)
+        );
+        assert_eq!(
+            progress_id_to(Id::new(Seed, 13), Location, &almanac),
+            Id::new(Location, 35)
+        );
+    }
+
+    #[test]
+    fn can_find_nearest_location() {
+        assert_eq!(
+            find_nearest_location(&example_seeds(), &example_almanac()),
+            35
+        );
     }
 }
