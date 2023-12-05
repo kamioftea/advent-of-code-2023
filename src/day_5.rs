@@ -10,15 +10,15 @@ use std::fs;
 use std::str::FromStr;
 
 #[derive(Eq, PartialEq, Debug)]
-struct Range {
+struct AlmanacRange {
     start: i64,
     delta: i64,
     length: i64,
 }
 
-impl Range {
-    fn new(start: i64, delta: i64, length: i64) -> Range {
-        Range {
+impl AlmanacRange {
+    fn new(start: i64, delta: i64, length: i64) -> AlmanacRange {
+        AlmanacRange {
             start,
             delta,
             length,
@@ -27,21 +27,23 @@ impl Range {
 }
 
 #[derive(Eq, PartialEq, Debug)]
-struct AlmanacMap {
+struct AlmanacSection {
     source: Category,
     destination: Category,
-    ranges: Vec<Range>,
+    ranges: Vec<AlmanacRange>,
 }
 
-impl AlmanacMap {
-    fn new(source: Category, destination: Category, ranges: Vec<Range>) -> AlmanacMap {
-        AlmanacMap {
+impl AlmanacSection {
+    fn new(source: Category, destination: Category, ranges: Vec<AlmanacRange>) -> AlmanacSection {
+        AlmanacSection {
             source,
             destination,
             ranges,
         }
     }
 }
+
+type Almanac = HashMap<Category, AlmanacSection>;
 
 #[derive(Eq, PartialEq, Debug, Hash, Copy, Clone)]
 enum Category {
@@ -74,14 +76,19 @@ impl FromStr for Category {
 }
 
 #[derive(Eq, PartialEq, Debug, Clone)]
-struct Id {
+struct IdRange {
     category: Category,
-    value: i64,
+    start: i64,
+    length: i64,
 }
 
-impl Id {
-    fn new(category: Category, value: i64) -> Id {
-        Id { category, value }
+impl IdRange {
+    fn new(category: Category, start: i64, length: i64) -> IdRange {
+        IdRange {
+            category,
+            start,
+            length,
+        }
     }
 }
 
@@ -95,34 +102,38 @@ pub fn run() {
     let (seeds, almanac) = parse_input(&contents);
 
     println!(
-        "The nearest location_id is: {}",
-        find_nearest_location(&seeds, &almanac)
+        "The nearest location id from individual seeds is: {}",
+        find_nearest_location_from_ranges(ids_as_single_seeds(&seeds), &almanac)
+    );
+
+    println!(
+        "The nearest location id from seed ranges is: {}",
+        find_nearest_location_from_ranges(ids_to_ranges(&seeds), &almanac)
     )
 }
 
-fn find_nearest_location(seeds: &Vec<Id>, almanac: &HashMap<Category, AlmanacMap>) -> i64 {
-    seeds
+fn find_nearest_location_from_ranges(seeds: Vec<IdRange>, almanac: &Almanac) -> i64 {
+    progress_id_ranges_to(seeds, Location, almanac)
         .iter()
-        .map(|seed| progress_id_to(seed.clone(), Location, almanac).value)
+        .map(|range| range.start)
         .min()
-        .unwrap_or(0)
+        .unwrap()
 }
 
-fn parse_input(input: &String) -> (Vec<Id>, HashMap<Category, AlmanacMap>) {
+fn parse_input(input: &String) -> (Vec<i64>, Almanac) {
     let mut parts = input.split("\n\n");
 
     (parse_seeds(parts.next().unwrap()), parse_maps(parts))
 }
 
-fn parse_seeds(input: &str) -> Vec<Id> {
+fn parse_seeds(input: &str) -> Vec<i64> {
     input
         .split(" ")
         .filter_map(|id| id.parse::<i64>().ok())
-        .map(|value| Id::new(Seed, value))
         .collect()
 }
 
-fn parse_maps<'a>(map_specs: impl Iterator<Item = &'a str>) -> HashMap<Category, AlmanacMap> {
+fn parse_maps<'a>(map_specs: impl Iterator<Item = &'a str>) -> Almanac {
     let mut maps = HashMap::new();
 
     for map_spec in map_specs {
@@ -130,7 +141,7 @@ fn parse_maps<'a>(map_specs: impl Iterator<Item = &'a str>) -> HashMap<Category,
         let (from, to) = parse_header(lines.next().unwrap());
         maps.insert(
             from.clone(),
-            AlmanacMap::new(
+            AlmanacSection::new(
                 from,
                 to,
                 lines
@@ -150,124 +161,177 @@ fn parse_header(header_spec: &str) -> (Category, Category) {
     return (from.parse().unwrap(), to.parse().unwrap());
 }
 
-fn parse_range(range_spec: &str) -> Range {
+fn parse_range(range_spec: &str) -> AlmanacRange {
     let parts: Vec<i64> = range_spec
         .split(" ")
         .filter_map(|part| part.parse().ok())
         .collect();
-    if parts.len() < 3 {
-        println!("error parsing {}, got {:?}", range_spec, parts)
-    }
 
-    Range::new(parts[1], parts[0] - parts[1], parts[2])
+    AlmanacRange::new(parts[1], parts[0] - parts[1], parts[2])
 }
 
-fn progress_id(id: &Id, almanac: &HashMap<Category, AlmanacMap>) -> Id {
-    let mapper = almanac.get(&id.category).unwrap();
-    for range in &mapper.ranges {
-        if id.value < range.start {
-            return Id::new(mapper.destination, id.value);
+fn progress_id_range(id_range: &IdRange, almanac: &Almanac) -> Vec<IdRange> {
+    let mut new_id_ranges = Vec::new();
+    let mut current = id_range.start;
+    let id_range_end = id_range.start + id_range.length;
+
+    let section = almanac.get(&id_range.category).unwrap();
+
+    for almanac_range in &section.ranges {
+        if almanac_range.start > current {
+            let id_sub_range_end = almanac_range.start.min(id_range_end);
+            new_id_ranges.push(IdRange::new(
+                section.destination.clone(),
+                current,
+                id_sub_range_end - current,
+            ));
+
+            current = almanac_range.start;
         }
-        if id.value < range.start + range.length {
-            return Id::new(mapper.destination, id.value + range.delta);
+
+        if current >= id_range_end {
+            break;
+        }
+
+        if almanac_range.start + almanac_range.length > current {
+            let id_range_end = (almanac_range.start + almanac_range.length).min(id_range_end);
+            new_id_ranges.push(IdRange::new(
+                section.destination.clone(),
+                current + almanac_range.delta,
+                id_range_end - current,
+            ));
+
+            current = almanac_range.start + almanac_range.length;
+        }
+
+        if current >= id_range_end {
+            break;
         }
     }
 
-    Id::new(mapper.destination, id.value)
+    if current < id_range_end {
+        new_id_ranges.push(IdRange::new(
+            section.destination,
+            current,
+            id_range_end - current,
+        ))
+    }
+
+    new_id_ranges
 }
 
-fn progress_id_to(id: Id, category: Category, almanac: &HashMap<Category, AlmanacMap>) -> Id {
-    return if id.category == category {
-        id
+fn ids_as_single_seeds(ids: &Vec<i64>) -> Vec<IdRange> {
+    ids.into_iter()
+        .map(|&start| IdRange::new(Seed, start, 1))
+        .collect()
+}
+
+fn ids_to_ranges(ids: &Vec<i64>) -> Vec<IdRange> {
+    ids.into_iter()
+        .tuples()
+        .map(|(&start, &length)| IdRange::new(Seed, start, length))
+        .collect()
+}
+
+fn progress_id_ranges_to(
+    id_ranges: Vec<IdRange>,
+    category: Category,
+    almanac: &Almanac,
+) -> Vec<IdRange> {
+    let current_category = id_ranges.get(0).unwrap().category;
+
+    if current_category == category {
+        id_ranges
     } else {
-        progress_id_to(progress_id(&id, almanac), category, almanac)
-    };
+        progress_id_ranges_to(
+            id_ranges
+                .iter()
+                .flat_map(|range| progress_id_range(range, almanac))
+                .collect(),
+            category,
+            almanac,
+        )
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::day_5::*;
     use crate::helpers::test::assert_contains_in_any_order;
-    use std::collections::HashMap;
 
-    fn example_seeds() -> Vec<Id> {
-        vec![
-            Id::new(Seed, 79),
-            Id::new(Seed, 14),
-            Id::new(Seed, 55),
-            Id::new(Seed, 13),
-        ]
+    fn example_seeds() -> Vec<i64> {
+        vec![79, 14, 55, 13]
     }
 
-    fn example_almanac() -> HashMap<Category, AlmanacMap> {
+    fn example_almanac() -> Almanac {
         vec![
             (
                 Seed,
-                AlmanacMap::new(
+                AlmanacSection::new(
                     Seed,
                     Soil,
-                    vec![Range::new(50, 2, 48), Range::new(98, -48, 2)],
+                    vec![AlmanacRange::new(50, 2, 48), AlmanacRange::new(98, -48, 2)],
                 ),
             ),
             (
                 Soil,
-                AlmanacMap::new(
+                AlmanacSection::new(
                     Soil,
                     Fertilizer,
                     vec![
-                        Range::new(0, 39, 15),
-                        Range::new(15, -15, 37),
-                        Range::new(52, -15, 2),
+                        AlmanacRange::new(0, 39, 15),
+                        AlmanacRange::new(15, -15, 37),
+                        AlmanacRange::new(52, -15, 2),
                     ],
                 ),
             ),
             (
                 Fertilizer,
-                AlmanacMap::new(
+                AlmanacSection::new(
                     Fertilizer,
                     Water,
                     vec![
-                        Range::new(0, 42, 7),
-                        Range::new(7, 50, 4),
-                        Range::new(11, -11, 42),
-                        Range::new(53, -4, 8),
+                        AlmanacRange::new(0, 42, 7),
+                        AlmanacRange::new(7, 50, 4),
+                        AlmanacRange::new(11, -11, 42),
+                        AlmanacRange::new(53, -4, 8),
                     ],
                 ),
             ),
             (
                 Water,
-                AlmanacMap::new(
+                AlmanacSection::new(
                     Water,
                     Light,
-                    vec![Range::new(18, 70, 7), Range::new(25, -7, 70)],
+                    vec![AlmanacRange::new(18, 70, 7), AlmanacRange::new(25, -7, 70)],
                 ),
             ),
             (
                 Light,
-                AlmanacMap::new(
+                AlmanacSection::new(
                     Light,
                     Temperature,
                     vec![
-                        Range::new(45, 36, 19),
-                        Range::new(64, 4, 13),
-                        Range::new(77, -32, 23),
+                        AlmanacRange::new(45, 36, 19),
+                        AlmanacRange::new(64, 4, 13),
+                        AlmanacRange::new(77, -32, 23),
                     ],
                 ),
             ),
             (
                 Temperature,
-                AlmanacMap::new(
+                AlmanacSection::new(
                     Temperature,
                     Humidity,
-                    vec![Range::new(0, 1, 69), Range::new(69, -69, 1)],
+                    vec![AlmanacRange::new(0, 1, 69), AlmanacRange::new(69, -69, 1)],
                 ),
             ),
             (
                 Humidity,
-                AlmanacMap::new(
+                AlmanacSection::new(
                     Humidity,
                     Location,
-                    vec![Range::new(56, 4, 37), Range::new(93, -37, 4)],
+                    vec![AlmanacRange::new(56, 4, 37), AlmanacRange::new(93, -37, 4)],
                 ),
             ),
         ]
@@ -320,42 +384,43 @@ humidity-to-location map:
     }
 
     #[test]
-    fn can_progress_id() {
-        let almanac = example_almanac();
+    fn can_explode_seed_pairs() {
+        let expected_ranges: Vec<IdRange> =
+            vec![IdRange::new(Seed, 79, 14), IdRange::new(Seed, 79, 14)];
 
-        assert_eq!(progress_id(&Id::new(Seed, 79), &almanac), Id::new(Soil, 81));
-        assert_eq!(progress_id(&Id::new(Seed, 14), &almanac), Id::new(Soil, 14));
-        assert_eq!(progress_id(&Id::new(Seed, 55), &almanac), Id::new(Soil, 57));
-        assert_eq!(progress_id(&Id::new(Seed, 13), &almanac), Id::new(Soil, 13));
+        assert_contains_in_any_order(ids_to_ranges(&example_seeds()), expected_ranges);
     }
 
     #[test]
-    fn can_progress_id_to_location() {
+    fn can_progress_id_ranges() {
         let almanac = example_almanac();
-
         assert_eq!(
-            progress_id_to(Id::new(Seed, 79), Location, &almanac),
-            Id::new(Location, 82)
+            progress_id_range(&IdRange::new(Seed, 0, 100), &almanac),
+            vec![
+                IdRange::new(Soil, 0, 50),
+                IdRange::new(Soil, 52, 48),
+                IdRange::new(Soil, 50, 2)
+            ]
         );
         assert_eq!(
-            progress_id_to(Id::new(Seed, 14), Location, &almanac),
-            Id::new(Location, 43)
-        );
-        assert_eq!(
-            progress_id_to(Id::new(Seed, 55), Location, &almanac),
-            Id::new(Location, 86)
-        );
-        assert_eq!(
-            progress_id_to(Id::new(Seed, 13), Location, &almanac),
-            Id::new(Location, 35)
+            progress_id_range(&IdRange::new(Seed, 97, 2), &almanac),
+            vec![IdRange::new(Soil, 99, 1), IdRange::new(Soil, 50, 1)]
         );
     }
 
     #[test]
-    fn can_find_nearest_location() {
+    fn can_find_nearest_location_from_ranges() {
         assert_eq!(
-            find_nearest_location(&example_seeds(), &example_almanac()),
+            find_nearest_location_from_ranges(
+                ids_as_single_seeds(&example_seeds()),
+                &example_almanac()
+            ),
             35
+        );
+
+        assert_eq!(
+            find_nearest_location_from_ranges(ids_to_ranges(&example_seeds()), &example_almanac()),
+            46
         );
     }
 }
