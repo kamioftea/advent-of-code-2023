@@ -7,7 +7,6 @@
 
 use std::collections::HashSet;
 use std::fs;
-use std::iter::Sum;
 
 /// Represents a scratchcard (one line of input)
 #[derive(Eq, PartialEq, Debug)]
