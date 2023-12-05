@@ -62,7 +62,8 @@ struct AlmanacMap {
 
 I convert the example spec into this representation, and use that as a test.  The parsing splits the inputs on each 
 blank line, parses the seed numbers into `Id`s in the `Seed` category, and builds a `HashMap<Category, AlmanacMap>`, 
-from the sections. Notably the ranges within each `AlmanacMap` are 
+from the sections. Notably the ranges within each `AlmanacMap` are sorted for ease of finding which applies to a 
+given `Id`.
 
 ## Part one - the seed bone's connected to the soil bone, ...
 
