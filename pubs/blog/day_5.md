@@ -286,6 +286,6 @@ fn ids_to_ranges(ids: &Vec<i64>) -> Vec<IdRange> {
 Having part one have an obvious solution that doesn't scale to part two is a common puzzle type for Advent of Code, 
 and at least the first one each year usually catches me out. It was satisfying to figure out a more efficient way of 
 mapping the ranges, but there was a lot of tedious parsing to get there, so today was a bit of a drag. I did make 
-things harder for my self by actually tracking the categories rather than just stepping through the sections, which 
+things harder for my self by actually tracking the categories rather than stepping through the sections, since 
 appeared in transformation order. I feel the code makes more sense for having the domain context represented in that 
 way.
