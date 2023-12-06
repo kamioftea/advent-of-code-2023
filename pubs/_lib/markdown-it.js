@@ -2,6 +2,7 @@ const MarkdownIt = require('markdown-it')
 const anchor = require('markdown-it-anchor')
 const defList = require('markdown-it-deflist');
 const highlight = require('./highlight')
+const mathjax = require('markdown-it-mathjax')
 
 
 const defaultOpts = {
@@ -16,6 +17,7 @@ module.exports = (options = defaultOpts) => {
         html:        true,
         linkify:     false,
         typographer: true,
+
         ...(options.baseOpts)
     }
 
@@ -29,5 +31,6 @@ module.exports = (options = defaultOpts) => {
                            }) :
                            false
         })
-        .use(defList);
+        .use(defList)
+        .use(mathjax());
 }
