@@ -7,10 +7,11 @@ header: 'Day 6: Wait For It'
 Today we're in a convoluted boat race. I'm glad to say that I noticed the maths to solve from the start rather than
 implementing a naive solution that blows up in step two.
 
-If the race lasts for a duration of `d` seconds, and you hold the button for `n` seconds it will travel at speed `n`
-for `d - n` seconds. If the current record is `r` then for each `n` where $num\_seconds * (duration - num\_seconds) >
-current\_record$, the boat will travel further than the record. To get the bounds we need the two points where $n *
-(d - n) = r$. Rearranging this:
+## First, some maths
+
+If the race lasts for a duration of $d$ seconds, and you hold the button for $n$ seconds it will travel at speed $n$
+for $d - n$ seconds. If the current record best time is $r$ then for each $n$ where $n * (d - n) > r$, the boat will 
+travel further than the record. To get the bounds we need the two points where $n * (d - n) = r$. Rearranging this:
 
 $$n * (d - n) = r$$
 
@@ -18,7 +19,7 @@ $$nd - n^2 = r$$
 
 $$0 = n^2 - dn + r$$
 
-Which is a quadratic equation in the form $ax^2 + bx + c$, where a = 1, b = -d, and c = r. The roots of
+Which is a quadratic equation in the form $ax^2 + bx + c$, where $a = 1$, $b = -d$, and $c = r$. The roots of
 this can be obtained using the [quadratic formula](https://en.wikipedia.org/wiki/Quadratic_formula):
 
 $$x = {-b \pm \sqrt{b^2-4ac} \over 2a}$$
@@ -33,7 +34,7 @@ the record.
 ## Parsing
 
 Parsing the input was refreshingly simple today. The only slight bump was pairing up the numbers from each line, for
-which there is `zip`
+which there is `zip`.
 
 ```rust
 #[derive(Eq, PartialEq, Debug)]
@@ -85,8 +86,9 @@ Tests can be generated from the examples:
     }
 ```
 
-Implementing part one only requires using the `+` and `-` variants of the quadratic formula to solve. The square
-root and division will need the numbers to be manipulated as floats.
+Implementing part one requires using the `+` and `-` variants of the quadratic formula to find the roots of 
+the quadratic equation, which are the bounds of the range. The square root and division will need the numbers to be 
+manipulated as floats.
 
 There was an out by one error to resolve here. For races where the root is not an exact integer the valid values are the
 next integer higher than the lower bound (`lower_bound::ceil()`) to the previous integer below the upper
@@ -96,6 +98,7 @@ is an exact integer, which was the case for the third race. `lower_bound::ceil()
 excluded because using that would equal the current record rather than exceed it. This can be fixed by
 using `lower_bound::floor() + 1`, i.e. always round down to the highest excluded integer, then add one giving the
 lowest, included integer.
+
 That gives:
 
 ```rust
