@@ -1,4 +1,4 @@
-//! This is my solution for [Advent of Code - Day 6: _???_](https://adventofcode.com/2023/day/6)
+//! This is my solution for [Advent of Code - Day 6: _Wait For It_](https://adventofcode.com/2023/day/6)
 //!
 //! Today was solved with maths rather than brute force. The parsing is not much effort, but different for each part.
 //! [`part_1_line_parser`] and [`part_2_line_parser`] contain these differences, and the relevant one is passed to
