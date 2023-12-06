@@ -1,19 +1,26 @@
 //! This is my solution for [Advent of Code - Day 6: _???_](https://adventofcode.com/2023/day/6)
 //!
+//! Today was solved with maths rather than brute force. The parsing is not much effort, but different for each part.
+//! [`part_1_line_parser`] and [`part_2_line_parser`] contain these differences, and the relevant one is passed to
+//! [`parse_input`] giving a list of [`Race`]s.
 //!
+//! [`find_count_of_winning_hold_times`] uses the quadratic formula to calculate the bounds, and therefore length of
+//! the winning range of seconds to hold before releasing the boat. [`find_product_of_races`] can be used for both
+//! parts, as the single race is unchanged by `iter().product`.
 
 use std::fs;
 
+/// A race duration, with the distance to beat in that time
 #[derive(Eq, PartialEq, Debug)]
 struct Race {
-    time: i64,
+    duration: i64,
     distance_record: i64,
 }
 
 impl Race {
     fn new(time: i64, distance_record: i64) -> Race {
         Race {
-            time,
+            duration: time,
             distance_record,
         }
     }
@@ -28,26 +35,17 @@ pub fn run() {
 
     println!(
         "The product of the number of ways to win is: {}",
-        solve_part_1(&contents)
+        find_product_of_races(&parse_input(&contents, part_1_line_parser))
     );
 
     println!(
         "The number of ways to win the combined race is: {}",
-        solve_part_2(&contents)
+        find_product_of_races(&parse_input(&contents, part_2_line_parser))
     );
 }
 
-fn solve_part_2(contents: &String) -> i64 {
-    find_count_of_winning_hold_times(parse_input(&contents, part_2_line_parser).get(0).unwrap())
-}
-
-fn solve_part_1(contents: &String) -> i64 {
-    parse_input(&contents, part_1_line_parser)
-        .iter()
-        .map(find_count_of_winning_hold_times)
-        .fold(1, |acc, num| acc * num)
-}
-
+/// Parse input from a line of durations and a line current record best times into a
+/// list of records. How to parse each line is abstracted to a `line_parser` for each part
 fn parse_input(input: &String, line_parser: fn(&str) -> Vec<i64>) -> Vec<Race> {
     let mut lines = input.split("\n");
     line_parser(lines.next().unwrap())
@@ -57,12 +55,14 @@ fn parse_input(input: &String, line_parser: fn(&str) -> Vec<i64>) -> Vec<Race> {
         .collect()
 }
 
+/// Parse lines as multiple numbers separated by whitespace
 fn part_1_line_parser(line: &str) -> Vec<i64> {
     line.split(" ")
         .filter_map(|word| word.parse().ok())
         .collect()
 }
 
+/// Parse lines as a single number each
 fn part_2_line_parser(line: &str) -> Vec<i64> {
     let num = line
         .chars()
@@ -72,21 +72,30 @@ fn part_2_line_parser(line: &str) -> Vec<i64> {
     return vec![num];
 }
 
+/// Convert a list of races into the size of the range of hold times, and find the product of these as the puzzle
+/// answer.
+fn find_product_of_races(races: &Vec<Race>) -> i64 {
+    races.iter().map(find_count_of_winning_hold_times).product()
+}
+
+/// Calculate the range of seconds the boat's button could be pressed for to exceed the current record for a race.
+/// Uses the [quadratic formula](https://en.wikipedia.org/wiki/Quadratic_formula) to calculate the upper and lower
+/// bound, and return the size of the range of integers within those bounds.
 fn find_count_of_winning_hold_times(race: &Race) -> i64 {
-    let root_a =
-        (race.time as f64 + f64::sqrt((race.time.pow(2) - 4 * race.distance_record) as f64)) / 2f64;
-    let root_b =
-        (race.time as f64 - f64::sqrt((race.time.pow(2) - 4 * race.distance_record) as f64)) / 2f64;
+    // `sqrt` and `/` expect to work with floats
+    let duration = race.duration as f64;
+    let record = race.distance_record as f64;
 
-    let lower_bound = root_a.min(root_b);
-    let lower_bound_inclusive =
-        (lower_bound.ceil() - (lower_bound.ceil() - lower_bound.floor()).ceil()) as i64 + 1;
+    let root_a = (duration + (duration.powf(2.0) - 4.0 * record).sqrt()) / 2.0;
+    let root_b = (duration - (duration.powf(2.0) - 4.0 * record).sqrt()) / 2.0;
 
-    let upper_bound = root_a.max(root_b);
-    let upper_bound_exclusive =
-        (upper_bound.floor() + (upper_bound.ceil() - upper_bound.floor()).ceil()) as i64;
+    // Inclusive. Floor here rounds down the the last excluded integer before the range, so then add one to get the
+    // inclusive lower bound.
+    let lower_bound = root_a.min(root_b).floor() as i64 + 1;
+    // Exclusive. Ceil always gives the next integer beyond the range.
+    let upper_bound = root_a.max(root_b).ceil() as i64;
 
-    upper_bound_exclusive - lower_bound_inclusive
+    upper_bound - lower_bound
 }
 
 #[cfg(test)]
@@ -124,12 +133,18 @@ Distance:  9  40  200
     }
 
     #[test]
-    fn can_solve_part_1() {
-        assert_eq!(solve_part_1(&example_input()), 288);
+    fn can_find_product_of_winning_hold_times() {
+        assert_eq!(
+            find_product_of_races(&parse_input(&example_input(), part_1_line_parser)),
+            288
+        );
     }
 
     #[test]
-    fn can_solve_part_2() {
-        assert_eq!(solve_part_2(&example_input()), 71503);
+    fn can_find_hold_times_for_combined_race() {
+        assert_eq!(
+            find_product_of_races(&parse_input(&example_input(), part_2_line_parser)),
+            71503
+        );
     }
 }
