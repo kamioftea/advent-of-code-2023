@@ -1,6 +1,12 @@
 //! This is my solution for [Advent of Code - Day 7: _Camel Cards_](https://adventofcode.com/2023/day/7)
 //!
+//! The bulk of the work is done in parsing the input into [`Hand`]s. This is done by
+//! [`parse_input`], [`parse_hand`]. [`calculate_hand_type`] is used during parsing to
+//! pre-calculate the [`HandType`] once for use in later sorting. [`parse_cards_part_1`],
+//! [`parse_cards_part_2`] are used to control whether a `J` is a [`Joker`] or a [`Jack`].
 //!
+//! [`total_winnings`] sorts the hands using [`Hand::cmp`], and enumerates the ranking to get the
+//! puzzle solutions.
 
 use crate::day_7::HandType::*;
 use itertools::Itertools;
@@ -8,6 +14,7 @@ use std::cmp::Ordering;
 use std::fs;
 use Card::*;
 
+/// A single card.
 #[derive(Eq, PartialEq, Debug, Ord, PartialOrd, Hash, Copy, Clone)]
 enum Card {
     Joker,
@@ -33,6 +40,7 @@ impl TryFrom<char> for Card {
     }
 }
 
+/// The scoring type of a [`Hand`] of five cards
 #[derive(Eq, PartialEq, Debug, Ord, PartialOrd)]
 enum HandType {
     HighCard,
@@ -44,6 +52,7 @@ enum HandType {
     FiveOfAKind,
 }
 
+/// A hand of cards, including the list of cards in drawn order, the scoring type, and amount bid
 #[derive(Eq, PartialEq, Debug)]
 struct Hand {
     bid: i32,
@@ -62,6 +71,7 @@ impl Hand {
 }
 
 impl Ord for Hand {
+    /// Compare the rank of the [`HandType`], then compare card by card in drawn order.
     fn cmp(&self, other: &Self) -> Ordering {
         self.hand_type
             .cmp(&other.hand_type)
@@ -93,6 +103,7 @@ pub fn run() {
     );
 }
 
+/// Parse the puzzle input
 fn parse_input(input: &String, card_parser: fn(&str) -> Vec<Card>) -> Vec<Hand> {
     input
         .lines()
@@ -100,6 +111,7 @@ fn parse_input(input: &String, card_parser: fn(&str) -> Vec<Card>) -> Vec<Hand> 
         .collect()
 }
 
+/// Parse a single line in the format `AKQJT 123`
 fn parse_hand(line: &str, card_parser: fn(&str) -> Vec<Card>) -> Hand {
     let (card_spec, bid_spec) = line.split_once(" ").unwrap();
     let cards: Vec<Card> = card_parser(card_spec);
@@ -108,6 +120,7 @@ fn parse_hand(line: &str, card_parser: fn(&str) -> Vec<Card>) -> Hand {
     Hand::new(bid_spec.parse().unwrap(), cards, hand_type)
 }
 
+/// Use part 1 parsing of `J` meaning `Jack`
 fn parse_cards_part_1(card_spec: &str) -> Vec<Card> {
     card_spec
         .chars()
@@ -115,6 +128,7 @@ fn parse_cards_part_1(card_spec: &str) -> Vec<Card> {
         .collect()
 }
 
+/// Use part 2 parsing of `J` meaning `Joker`
 fn parse_cards_part_2(card_spec: &str) -> Vec<Card> {
     parse_cards_part_1(card_spec)
         .iter()
@@ -122,6 +136,11 @@ fn parse_cards_part_2(card_spec: &str) -> Vec<Card> {
         .collect()
 }
 
+/// Determine the hand rank of a list of five cards.
+///
+/// For part 1 the scoring can be uniquely calculated from the number of unique cards and the
+/// count of the most numerous value. When part 2 introduces jokers, the count of jokers is also
+/// needed.
 fn calculate_hand_type(cards: &Vec<Card>) -> HandType {
     let groups = cards.iter().counts();
     let distinct_count = groups.len();
@@ -129,24 +148,26 @@ fn calculate_hand_type(cards: &Vec<Card>) -> HandType {
     let joker_count = groups.get(&Joker).unwrap_or(&0);
 
     match (distinct_count, max_group, joker_count) {
-        (1, _, _) => FiveOfAKind,
+        (1, 5, _) => FiveOfAKind,
         (2, 4, 0) => FourOfAKind,
-        (2, 4, _) => FiveOfAKind, // Only 2 values of card, joker(s) change to match the other cards
+        (2, 4, _) => FiveOfAKind, // Only 2 values of card, joker(s) change to match the other card(s)
         (2, 3, 0) => FullHouse,
         (2, 3, _) => FiveOfAKind, // Only 2 values of card, jokers change to match the other cards
         (3, 3, 0) => ThreeOfAKind,
-        (3, 3, _) => FourOfAKind, // Either three jokers pair up with a singleton, or singleton joker matches triple
+        (3, 3, _) => FourOfAKind, // Either three jokers match a singleton, or singleton joker matches triple
         (3, 2, 0) => TwoPair,
         (3, 2, 1) => FullHouse,   // Singleton joker matches one of the pairs
         (3, 2, 2) => FourOfAKind, // Two jokers match the other pair
-        (4, _, 0) => OnePair,
-        (4, _, _) => ThreeOfAKind, // Two jokers match any of the singletons, singleton joker matches the pair
-        (5, _, 0) => HighCard,     // Joker pairs up with any of the other values
-        (5, _, _) => OnePair,
+        (4, 2, 0) => OnePair,
+        (4, 2, _) => ThreeOfAKind, // Two jokers match any of the singletons, singleton joker matches the pair
+        (5, 1, 0) => HighCard,     // Joker pairs up with any of the other values
+        (5, 1, 1) => OnePair,
         _ => unreachable!(),
     }
 }
 
+/// Reduce a list of cards to the puzzle solution. This is their place in the ranking when sorted
+/// weakest first multiplied by the amount bid.
 fn total_winnings(hands: &Vec<Hand>) -> i32 {
     hands
         .iter()
