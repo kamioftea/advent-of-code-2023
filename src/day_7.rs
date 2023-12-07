@@ -15,10 +15,10 @@ use std::fs;
 use Card::*;
 
 /// A single card.
-#[derive(Eq, PartialEq, Debug, Ord, PartialOrd, Hash, Copy, Clone)]
+#[derive(Eq, PartialEq, Debug, Ord, PartialOrd, Hash)]
 enum Card {
     Joker,
-    Number(u32),
+    Num(u32),
     Jack,
     Queen,
     King,
@@ -34,8 +34,8 @@ impl TryFrom<char> for Card {
             'K' => Ok(King),
             'Q' => Ok(Queen),
             'J' => Ok(Jack),
-            'T' => Ok(Number(10)),
-            c => c.to_digit(10).map(|d| Number(d)).ok_or(()),
+            'T' => Ok(Num(10)),
+            c => c.to_digit(10).map(|d| Num(d)).ok_or(()),
         }
     }
 }
@@ -121,18 +121,18 @@ fn parse_hand(line: &str, card_parser: fn(&str) -> Vec<Card>) -> Hand {
 }
 
 /// Use part 1 parsing of `J` meaning `Jack`
-fn parse_cards_part_1(card_spec: &str) -> Vec<Card> {
-    card_spec
+fn parse_cards_part_1(cards_spec: &str) -> Vec<Card> {
+    cards_spec
         .chars()
         .filter_map(|c| c.try_into().ok())
         .collect()
 }
 
 /// Use part 2 parsing of `J` meaning `Joker`
-fn parse_cards_part_2(card_spec: &str) -> Vec<Card> {
-    parse_cards_part_1(card_spec)
-        .iter()
-        .map(|&c| if c == Jack { Joker } else { c })
+fn parse_cards_part_2(cards_spec: &str) -> Vec<Card> {
+    parse_cards_part_1(cards_spec)
+        .into_iter()
+        .map(|c| if c == Jack { Joker } else { c })
         .collect()
 }
 
@@ -148,20 +148,20 @@ fn calculate_hand_type(cards: &Vec<Card>) -> HandType {
     let joker_count = groups.get(&Joker).unwrap_or(&0);
 
     match (distinct_count, max_group, joker_count) {
-        (1, 5, _) => FiveOfAKind,
-        (2, 4, 0) => FourOfAKind,
-        (2, 4, _) => FiveOfAKind, // Only 2 values of card, joker(s) change to match the other card(s)
-        (2, 3, 0) => FullHouse,
-        (2, 3, _) => FiveOfAKind, // Only 2 values of card, jokers change to match the other cards
-        (3, 3, 0) => ThreeOfAKind,
-        (3, 3, _) => FourOfAKind, // Either three jokers match a singleton, or singleton joker matches triple
-        (3, 2, 0) => TwoPair,
-        (3, 2, 1) => FullHouse,   // Singleton joker matches one of the pairs
-        (3, 2, 2) => FourOfAKind, // Two jokers match the other pair
-        (4, 2, 0) => OnePair,
-        (4, 2, _) => ThreeOfAKind, // Two jokers match any of the singletons, singleton joker matches the pair
-        (5, 1, 0) => HighCard,     // Joker pairs up with any of the other values
-        (5, 1, 1) => OnePair,
+        (1, 5, _) => FiveOfAKind,  //
+        (2, 4, 0) => FourOfAKind,  //
+        (2, 4, _) => FiveOfAKind,  // Only 2 values, joker(s) change to match the other card(s)
+        (2, 3, 0) => FullHouse,    //
+        (2, 3, _) => FiveOfAKind,  // Only 2 values, jokers change to match the other cards
+        (3, 3, 0) => ThreeOfAKind, //
+        (3, 3, _) => FourOfAKind,  // Three jokers match a singleton, or single joker matches triple
+        (3, 2, 0) => TwoPair,      //
+        (3, 2, 1) => FullHouse,    // Singleton joker matches one of the pairs
+        (3, 2, 2) => FourOfAKind,  // Two jokers match the other pair
+        (4, 2, 0) => OnePair,      //
+        (4, 2, _) => ThreeOfAKind, // Two jokers match one singletons, single joker matches the pair
+        (5, 1, 0) => HighCard,     //
+        (5, 1, 1) => OnePair,      // Joker pairs up with any of the other values
         _ => unreachable!(),
     }
 }
@@ -184,22 +184,14 @@ mod tests {
 
     fn example_hands() -> Vec<Hand> {
         vec![
-            Hand::new(
-                765,
-                vec![Number(3), Number(2), Number(10), Number(3), King],
-                OnePair,
-            ),
+            Hand::new(765, vec![Num(3), Num(2), Num(10), Num(3), King], OnePair),
             Hand::new(
                 684,
-                vec![Number(10), Number(5), Number(5), Jack, Number(5)],
+                vec![Num(10), Num(5), Num(5), Jack, Num(5)],
                 ThreeOfAKind,
             ),
-            Hand::new(
-                28,
-                vec![King, King, Number(6), Number(7), Number(7)],
-                TwoPair,
-            ),
-            Hand::new(220, vec![King, Number(10), Jack, Jack, Number(10)], TwoPair),
+            Hand::new(28, vec![King, King, Num(6), Num(7), Num(7)], TwoPair),
+            Hand::new(220, vec![King, Num(10), Jack, Jack, Num(10)], TwoPair),
             Hand::new(483, vec![Queen, Queen, Queen, Jack, Ace], ThreeOfAKind),
         ]
     }
