@@ -4,18 +4,20 @@ tags: [post]
 header: 'Day 7: Camel Cards'
 ---
 
-Today the challenge is to sort poker hands by a slightly unorthodox method. Since the `HandType` of 
-a hand will need to be used repeatedly when sorting the list, it makes sense to pre-calculate it 
-and store it with the other data about the hand. The solution should then be inherent in the 
-data model.
+Today the challenge is to sort poker hands by a slightly unorthodox method. There are no suits, 
+and straight runs are not a rank. Further if two hands are of the same type, then you compare 
+cards in drawn order, not overall highest card.
+
+This sort of puzzle tends to fit rust's ergonomics well. A lot of the logic can be expressed 
+in the data model, and defining custom sorting is exposed in an intuitive way.
 
 ## Parsing
 
 First I'll define a data model. I'll use enums for the cards and hand ranks, as they have the 
 useful property that `#[derive(Eq, PartialEq, PartialOrd, Ord)]` will use the order the enum 
-appears in the code, so if I list them in rank order, low to high, I get the correct ordering 
-foe free. The ordering defaults mean I can also define the 9 number cards as `Num(i32)` and it 
-will assume ordering them `Num(2)` to `Num(10)` as required. 
+variations appears in the code, so if I list them in rank order, low to high, I get the correct 
+ordering foe free. The ordering defaults mean I can also define the 9 number cards as `Num(i32)` and 
+it will assume ordering them `Num(2)` to `Num(10)` as required. 
 
 ```rust
 #[derive(Eq, PartialEq, Debug, Ord, PartialOrd, Hash)]
@@ -201,13 +203,13 @@ fn total_winnings(hands: &Vec<Hand>) -> i32 {
 
 Part two replaces jacks with jokers, which:
 
-* Can count as any card when determining the `HandType`
+* Can count as any card when determining the `HandType`.
 * Are ranked lower than non-joker cards when comparing card-by-card.
 
 This requires a few changes:
 
-* Make the parsing of cards configurable, with a dedicated parser for each type,
-* Add `Joker` to `Card`. I can put this first in the `enum` to give it the lowest rank,
+* Make the parsing of cards configurable, with a dedicated parser for each type.
+* Add `Joker` to `Card`. Putting this first will give it the lowest rank.
 * Update `calculate_hand_type` to account for jokers.
 
 I add a `fn (&str) -> Vec<Card>` to `parse_input` and `parse_hand`. I can then implement the part 
