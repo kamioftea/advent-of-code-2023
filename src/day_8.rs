@@ -1,0 +1,158 @@
+//! This is my solution for [Advent of Code - Day 8: _???_](https://adventofcode.com/2023/day/8)
+//!
+//!
+
+use crate::day_8::Instruction::{Left, Right};
+use std::collections::HashMap;
+use std::fs;
+
+#[derive(Eq, PartialEq, Debug)]
+enum Instruction {
+    Left,
+    Right,
+}
+
+impl TryFrom<char> for Instruction {
+    type Error = ();
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        match value {
+            'L' => Ok(Left),
+            'R' => Ok(Right),
+            _ => Err(()),
+        }
+    }
+}
+
+type Node<'a> = (&'a str, &'a str);
+
+type Network<'a> = HashMap<&'a str, Node<'a>>;
+
+/// The entry point for running the solutions with the 'real' puzzle input.
+///
+/// - The puzzle input is expected to be at `<project_root>/res/day-8-input`
+/// - It is expected this will be called by [`super::main()`] when the user elects to run day 8.
+pub fn run() {
+    let contents = fs::read_to_string("res/day-8-input.txt").expect("Failed to read file");
+
+    let (instructions, network) = parse_input(&contents);
+
+    println!(
+        "The number of steps is: {}",
+        count_steps(&instructions, &network)
+    );
+}
+
+fn parse_input(input: &String) -> (Vec<Instruction>, Network) {
+    let (instructions_spec, network_spec) = input.split_once("\n\n").unwrap();
+
+    (
+        parse_instructions(instructions_spec),
+        parse_network(network_spec),
+    )
+}
+
+fn parse_instructions(line: &str) -> Vec<Instruction> {
+    line.chars().filter_map(|c| c.try_into().ok()).collect()
+}
+
+fn parse_network(network_spec: &str) -> Network {
+    network_spec.lines().map(parse_node).collect()
+}
+
+fn parse_node(node_spec: &str) -> (&str, Node) {
+    let (label, connections) = node_spec.split_once(" = ").unwrap();
+    let (left, right) = connections.split_once(", ").unwrap();
+
+    (
+        label,
+        (left.trim_start_matches("("), right.trim_end_matches(")")),
+    )
+}
+
+fn count_steps(instructions: &Vec<Instruction>, network: &Network) -> usize {
+    let mut steps = 0;
+    let mut position = "AAA";
+    let instruction_length = instructions.len();
+
+    while position != "ZZZ" {
+        let direction = instructions.get(steps % instruction_length).unwrap();
+        let &(left, right) = network.get(position).unwrap();
+
+        position = if *direction == Left { left } else { right };
+        steps += 1;
+    }
+
+    steps
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::day_8::*;
+
+    fn example_networks() -> Vec<Network<'static>> {
+        vec![
+            vec![
+                ("AAA", ("BBB", "CCC")),
+                ("BBB", ("DDD", "EEE")),
+                ("CCC", ("ZZZ", "GGG")),
+                ("DDD", ("DDD", "DDD")),
+                ("EEE", ("EEE", "EEE")),
+                ("GGG", ("GGG", "GGG")),
+                ("ZZZ", ("ZZZ", "ZZZ")),
+            ]
+            .into_iter()
+            .collect(),
+            vec![
+                ("AAA", ("BBB", "BBB")),
+                ("BBB", ("AAA", "ZZZ")),
+                ("ZZZ", ("ZZZ", "ZZZ")),
+            ]
+            .into_iter()
+            .collect(),
+        ]
+    }
+
+    #[test]
+    fn can_parse_input() {
+        let input_0 = "\
+RL
+
+AAA = (BBB, CCC)
+BBB = (DDD, EEE)
+CCC = (ZZZ, GGG)
+DDD = (DDD, DDD)
+EEE = (EEE, EEE)
+GGG = (GGG, GGG)
+ZZZ = (ZZZ, ZZZ)"
+            .to_string();
+
+        let input_1 = "\
+LLR
+
+AAA = (BBB, BBB)
+BBB = (AAA, ZZZ)
+ZZZ = (ZZZ, ZZZ)"
+            .to_string();
+
+        let networks = example_networks();
+
+        let (instructions_0, network_0) = parse_input(&input_0);
+
+        assert_eq!(instructions_0, vec![Right, Left]);
+        assert_eq!(network_0, networks[0]);
+
+        let (instructions_1, network_1) = parse_input(&input_1);
+
+        assert_eq!(instructions_1, vec![Left, Left, Right]);
+        assert_eq!(network_1, networks[1]);
+    }
+
+    #[test]
+    fn can_count_steps() {
+        let networks = example_networks();
+
+        assert_eq!(count_steps(&vec![Right, Left], &networks[0]), 2);
+        assert_eq!(count_steps(&vec![Left, Left, Right], &networks[1]), 6);
+    }
+}
