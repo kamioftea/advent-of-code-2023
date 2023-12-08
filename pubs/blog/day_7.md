@@ -83,8 +83,10 @@ QQQJA 483"
 }
 ```
 
+Parsing the lines into hands starts off typically, with the trickier logic delegated to stubs
+for now:
+
 ```rust
-/// Parse the puzzle input
 fn parse_input(input: &String) -> Vec<Hand> {
     input
         .lines()
