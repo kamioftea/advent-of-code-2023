@@ -3,6 +3,7 @@
 //!
 
 use crate::day_8::Instruction::{Left, Right};
+use num::Integer;
 use std::collections::HashMap;
 use std::fs;
 
@@ -39,7 +40,12 @@ pub fn run() {
 
     println!(
         "The number of steps is: {}",
-        count_steps(&instructions, &network)
+        count_steps("AAA", part_1_terminal, &instructions, &network)
+    );
+
+    println!(
+        "The number of ghost steps is: {}",
+        count_parallel_steps(&instructions, &network)
     );
 }
 
@@ -70,12 +76,25 @@ fn parse_node(node_spec: &str) -> (&str, Node) {
     )
 }
 
-fn count_steps(instructions: &Vec<Instruction>, network: &Network) -> usize {
+fn part_1_terminal(position: &str) -> bool {
+    position == "ZZZ"
+}
+
+fn part_2_terminal(position: &str) -> bool {
+    position.ends_with("Z")
+}
+
+fn count_steps(
+    start: &str,
+    terminal_predicate: fn(&str) -> bool,
+    instructions: &Vec<Instruction>,
+    network: &Network,
+) -> usize {
     let mut steps = 0;
-    let mut position = "AAA";
+    let mut position = start;
     let instruction_length = instructions.len();
 
-    while position != "ZZZ" {
+    while !terminal_predicate(position) {
         let direction = instructions.get(steps % instruction_length).unwrap();
         let &(left, right) = network.get(position).unwrap();
 
@@ -84,6 +103,14 @@ fn count_steps(instructions: &Vec<Instruction>, network: &Network) -> usize {
     }
 
     steps
+}
+
+fn count_parallel_steps(instructions: &Vec<Instruction>, network: &Network) -> usize {
+    network
+        .keys()
+        .filter(|k| k.ends_with("A"))
+        .map(|&start| count_steps(start, part_2_terminal, instructions, network))
+        .fold(1, |acc, steps| steps.lcm(&acc))
 }
 
 #[cfg(test)]
@@ -152,7 +179,38 @@ ZZZ = (ZZZ, ZZZ)"
     fn can_count_steps() {
         let networks = example_networks();
 
-        assert_eq!(count_steps(&vec![Right, Left], &networks[0]), 2);
-        assert_eq!(count_steps(&vec![Left, Left, Right], &networks[1]), 6);
+        assert_eq!(
+            count_steps("AAA", part_1_terminal, &vec![Right, Left], &networks[0]),
+            2
+        );
+        assert_eq!(
+            count_steps(
+                "AAA",
+                part_1_terminal,
+                &vec![Left, Left, Right],
+                &networks[1]
+            ),
+            6
+        );
+    }
+
+    #[test]
+    fn can_count_parallel_steps() {
+        let input = "\
+LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)"
+            .to_string();
+
+        let (instructions, network) = parse_input(&input);
+
+        assert_eq!(count_parallel_steps(&instructions, &network), 6);
     }
 }
