@@ -1,12 +1,19 @@
-//! This is my solution for [Advent of Code - Day 8: _???_](https://adventofcode.com/2023/day/8)
+//! This is my solution for [Advent of Code - Day 8: _Haunted Wasteland_](https://adventofcode.com/2023/day/8)
 //!
+//! Follows a map across a network of nodes. [`parse_input`] delegates to [`parse_instructions`],
+//! [`parse_network`], and [`parse_node`] to represent list of [`Instruction`]s and [`Network`]
+//! or [`Node`]s.
 //!
+//! [`count_steps`] counts the steps from a specific starting node to one that satisfies a given
+//! predicate. [`count_parallel_steps`] determines how long the ghosts need to cycle until they
+//! all reach a destination, assuming they are all on a regular loop through the network.
 
 use crate::day_8::Instruction::{Left, Right};
 use num::Integer;
 use std::collections::HashMap;
 use std::fs;
 
+/// An instruction determining which branch to follow when moving to the next node
 #[derive(Eq, PartialEq, Debug)]
 enum Instruction {
     Left,
@@ -25,8 +32,10 @@ impl TryFrom<char> for Instruction {
     }
 }
 
+/// A node in the network defined by the labels of the nodes you can reach next
 type Node<'a> = (&'a str, &'a str);
 
+/// A networks of [`Node`]s indexed by their label.
 type Network<'a> = HashMap<&'a str, Node<'a>>;
 
 /// The entry point for running the solutions with the 'real' puzzle input.
@@ -49,6 +58,7 @@ pub fn run() {
     );
 }
 
+/// Parse the input as an [`Instruction`] line followed by a [`Network`] of [`Node`]s
 fn parse_input(input: &String) -> (Vec<Instruction>, Network) {
     let (instructions_spec, network_spec) = input.split_once("\n\n").unwrap();
 
@@ -58,14 +68,18 @@ fn parse_input(input: &String) -> (Vec<Instruction>, Network) {
     )
 }
 
+/// Parse a line of `L` and `R` as [`Instruction`]s.
 fn parse_instructions(line: &str) -> Vec<Instruction> {
     line.chars().filter_map(|c| c.try_into().ok()).collect()
 }
 
+/// Parse each line of the spec as a labelled [`Node`] in a [`Network`].
 fn parse_network(network_spec: &str) -> Network {
     network_spec.lines().map(parse_node).collect()
 }
 
+/// Parse a line in the format e.g. `AAA = (BBB, CCC)` as a node labelled `AAA`, linked to `BBB`
+/// and `CCC` on the left and right respectively.
 fn parse_node(node_spec: &str) -> (&str, Node) {
     let (label, connections) = node_spec.split_once(" = ").unwrap();
     let (left, right) = connections.split_once(", ").unwrap();
@@ -76,14 +90,17 @@ fn parse_node(node_spec: &str) -> (&str, Node) {
     )
 }
 
+/// The destination for part one is the specific node labelled `ZZZ`
 fn part_1_terminal(position: &str) -> bool {
     position == "ZZZ"
 }
 
+/// Any node ending in `Z` counts as a destination for part 2
 fn part_2_terminal(position: &str) -> bool {
     position.ends_with("Z")
 }
 
+/// Follow the the list of instructions in a cycle until a destination node is reached
 fn count_steps(
     start: &str,
     terminal_predicate: fn(&str) -> bool,
@@ -105,6 +122,11 @@ fn count_steps(
     steps
 }
 
+/// Given a ghost starts at each of the nodes ending in `A`, and each follows the instructions in
+/// parallel, how many steps until they are all on a terminal node at the same time.
+///
+/// The ghosts each follow a fixed cycle of steps, so this can be determined using the least
+/// common multiple of each of their cycle lengths
 fn count_parallel_steps(instructions: &Vec<Instruction>, network: &Network) -> usize {
     network
         .keys()
