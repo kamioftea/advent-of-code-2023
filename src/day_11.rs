@@ -16,17 +16,24 @@ struct GalaxyImage {
 }
 
 impl GalaxyImage {
-    fn distance(a: usize, b: usize, clear: &HashSet<usize>) -> usize {
+    fn distance(a: usize, b: usize, clear: &HashSet<usize>, expansion_factor: usize) -> usize {
         if a > b {
-            GalaxyImage::distance(b, a, clear)
+            GalaxyImage::distance(b, a, clear, expansion_factor)
         } else {
-            b - a + clear.intersection(&(a..b).into_iter().collect()).count()
+            b - a
+                + (clear.intersection(&(a..b).into_iter().collect()).count()
+                    * (expansion_factor - 1))
         }
     }
 
-    fn min_distance(&self, &(x_a, y_a): &Coordinate, &(x_b, y_b): &Coordinate) -> usize {
-        GalaxyImage::distance(x_a, x_b, &self.clear_x)
-            + GalaxyImage::distance(y_a, y_b, &self.clear_y)
+    fn min_distance(
+        &self,
+        &(x_a, y_a): &Coordinate,
+        &(x_b, y_b): &Coordinate,
+        expansion_factor: usize,
+    ) -> usize {
+        GalaxyImage::distance(x_a, x_b, &self.clear_x, expansion_factor)
+            + GalaxyImage::distance(y_a, y_b, &self.clear_y, expansion_factor)
     }
 }
 
@@ -40,9 +47,14 @@ pub fn run() {
     let image = parse_input(&contents);
 
     println!(
-        "The sum of distances after expansion is: {}",
-        sum_of_all_pair_distances(&image)
-    )
+        "The sum of distances after single expansion is: {}",
+        sum_of_all_pair_distances(&image, 1)
+    );
+
+    println!(
+        "The sum of distances after 1_000_000 expansions is: {}",
+        sum_of_all_pair_distances(&image, 1_000_000)
+    );
 }
 
 fn parse_input(input: &String) -> GalaxyImage {
@@ -80,12 +92,12 @@ fn parse_input(input: &String) -> GalaxyImage {
     }
 }
 
-fn sum_of_all_pair_distances(image: &GalaxyImage) -> usize {
+fn sum_of_all_pair_distances(image: &GalaxyImage, expansion_factor: usize) -> usize {
     image
         .galaxies
         .iter()
         .tuple_combinations()
-        .map(|(a, b)| image.min_distance(a, b))
+        .map(|(a, b)| image.min_distance(a, b, expansion_factor))
         .sum()
 }
 
@@ -132,15 +144,20 @@ mod tests {
 
     #[test]
     fn can_calculate_min_distance() {
-        assert_eq!(example_galaxy_image().min_distance(&(1, 5), &(4, 9)), 9);
-        assert_eq!(example_galaxy_image().min_distance(&(3, 0), &(7, 8)), 15);
-        assert_eq!(example_galaxy_image().min_distance(&(0, 2), &(9, 6)), 17);
-        assert_eq!(example_galaxy_image().min_distance(&(0, 9), &(4, 9)), 5);
-        assert_eq!(example_galaxy_image().min_distance(&(4, 9), &(0, 9)), 5);
+        assert_eq!(example_galaxy_image().min_distance(&(1, 5), &(4, 9), 2), 9);
+        assert_eq!(example_galaxy_image().min_distance(&(3, 0), &(7, 8), 2), 15);
+        assert_eq!(example_galaxy_image().min_distance(&(0, 2), &(9, 6), 2), 17);
+        assert_eq!(example_galaxy_image().min_distance(&(0, 9), &(4, 9), 2), 5);
+        assert_eq!(example_galaxy_image().min_distance(&(4, 9), &(0, 9), 2), 5);
     }
 
     #[test]
-    fn can_calculate_v() {
-        assert_eq!(sum_of_all_pair_distances(&example_galaxy_image()), 374);
+    fn can_calculate_sum_of_distances() {
+        assert_eq!(sum_of_all_pair_distances(&example_galaxy_image(), 2), 374);
+        assert_eq!(sum_of_all_pair_distances(&example_galaxy_image(), 10), 1030);
+        assert_eq!(
+            sum_of_all_pair_distances(&example_galaxy_image(), 100),
+            8410
+        );
     }
 }
