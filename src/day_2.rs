@@ -25,7 +25,7 @@ struct Draw {
 
 impl Draw {
     fn new(red: u8, green: u8, blue: u8) -> Draw {
-        return Draw { red, green, blue };
+        Draw { red, green, blue }
     }
 }
 
@@ -38,7 +38,7 @@ struct Game {
 
 impl Game {
     fn new(id: u32, draws: Vec<Draw>) -> Game {
-        return Game { id, draws };
+        Game { id, draws }
     }
 }
 
